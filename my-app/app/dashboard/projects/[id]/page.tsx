@@ -102,7 +102,6 @@ export default async function ProjectDetailPage({
               variant="ghost"
               size="sm"
               className="h-8 px-2 text-gray-500"
-              asChild
             >
               <Link href="/dashboard/projects">
                 <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects

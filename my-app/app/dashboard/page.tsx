@@ -74,10 +74,12 @@ export default function DashboardHome() {
               Overview of your projects, tasks and team activity.
             </p>
           </div>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer w-full sm:w-fit shadow-sm">
-            <Zap className="w-4 h-4 mr-2" />
-            Quick Add
-          </Button>
+          <Link href={`/dashboard/projects`}>
+            <Button className="bg-blue-600 hover:bg-blue-700 text-white cursor-pointer w-full sm:w-fit shadow-sm">
+              <Zap className="w-4 h-4 mr-2" />
+              Quick Add
+            </Button>
+          </Link>
         </CardContent>
       </Card>
 

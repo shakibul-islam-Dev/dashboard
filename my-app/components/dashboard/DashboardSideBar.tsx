@@ -137,7 +137,7 @@ export default function DashboardSideBar() {
             </span>
           </Link>
           <Link
-            href="/dashboard/help-support"
+            href="/dashboard/help&support"
             className="flex items-center gap-3 p-2.5 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
             title={!isOpen ? "Help & Support" : ""}
           >

@@ -1,61 +1,81 @@
 "use client";
 
-import { useEffect } from "react";
+import React, { useState } from "react";
+import Link from "next/link";
+import { Wrench, RefreshCw } from "lucide-react";
 
-export default function GlobalError({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  useEffect(() => {
-    console.error(error);
-  }, [error]);
+interface GlobalErrorCardProps {
+  onRetry?: () => void;
+  dashboardHref?: string;
+}
+
+export default function GlobalErrorCard({
+  onRetry,
+  dashboardHref = "/dashboard",
+}: GlobalErrorCardProps) {
+  const [isRetrying, setIsRetrying] = useState(false);
+
+  const handleRetry = () => {
+    setIsRetrying(true);
+    if (onRetry) {
+      onRetry();
+    }
+    setTimeout(() => {
+      setIsRetrying(false);
+    }, 1200);
+  };
 
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-slate-950 text-white">
-        <main className="flex min-h-screen items-center justify-center px-6">
-          <div className="w-full max-w-md text-center">
-            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-500/10 ring-1 ring-red-500/20">
-              <svg
-                className="h-8 w-8 text-red-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.8}
-                  d="M12 9v3.75m0 3.75h.008M10.29 3.86l-8.1 14a2 2 0 001.73 3h16.16a2 2 0 001.73-3l-8.1-14a2 2 0 00-3.46 0z"
-                />
-              </svg>
-            </div>
-
-            <p className="mb-2 text-sm font-medium text-red-400">
-              SYSTEM ERROR
-            </p>
-
-            <h1 className="text-3xl font-bold tracking-tight">
-              Something went wrong
-            </h1>
-
-            <p className="mt-3 text-sm leading-6 text-slate-400">
-              An unexpected system error occurred. Please try again or return to
-              your dashboard.
-            </p>
-
-            <button
-              onClick={() => reset()}
-              className="mt-8 rounded-lg bg-white px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-slate-200"
-            >
-              Try again
-            </button>
+    <div className="w-full max-w-5xl mx-auto p-4 sm:p-6 font-sans">
+      <div className="w-full bg-white border border-slate-200/90 rounded-2xl p-12 sm:p-16 flex flex-col items-center justify-center text-center shadow-xs">
+        {/* Soft Circular Radial Glow Behind Icon */}
+        <div className="relative mb-6 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full bg-slate-100/80 blur-xl scale-150" />
+          <div className="relative w-12 h-12 rounded-xl flex items-center justify-center text-slate-700 bg-slate-50/50">
+            <Wrench className="w-7 h-7 stroke-[1.75]" />
           </div>
-        </main>
-      </body>
-    </html>
+        </div>
+
+        {/* Title */}
+        <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+          Something Went Wrong
+        </h2>
+
+        {/* Description */}
+        <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-md mt-2">
+          An unexpected error occurred while processing your request.
+          <br />
+          Please try again or return to the dashboard.
+        </p>
+
+        {/* Dual Action Buttons */}
+        <div className="mt-8 flex items-center gap-3">
+          {/* Back to Dashboard Button */}
+          <Link
+            href={dashboardHref}
+            className="px-4 py-2.5 bg-white border border-slate-200/90 hover:bg-slate-50 text-slate-700 rounded-lg text-xs sm:text-sm font-semibold shadow-2xs transition-colors"
+          >
+            Back to Dashboard
+          </Link>
+
+          {/* Try Again Primary Button */}
+          <button
+            type="button"
+            onClick={handleRetry}
+            disabled={isRetrying}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 disabled:opacity-75 text-white rounded-lg text-xs sm:text-sm font-semibold shadow-xs transition-colors cursor-pointer"
+          >
+            {isRetrying ? (
+              <>
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Retrying...
+              </>
+            ) : (
+              "Try Again"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
