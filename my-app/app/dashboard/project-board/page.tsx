@@ -1,136 +1,38 @@
 "use client";
 import PathProvider from "@/components/customsUi/PathProvider";
 
-import React, { useState } from "react";
+import React from "react";
 import {
   FolderKanban,
   Clock,
   Sparkles,
   AlertTriangle,
-  User,
   Plus,
   Calendar,
   MoreVertical,
 } from "lucide-react";
-
-interface TeamMember {
-  name: string;
-  avatar: string;
-}
-
-interface Project {
-  id: string;
-  title: string;
-  key: string;
-  description: string;
-  dueDate: string;
-  progress: number;
-  projectManager: TeamMember;
-  teamLead: TeamMember;
-  developers: TeamMember[];
-  priority: "High" | "Medium" | "Urgent" | "Normal";
-}
+import { projectBoardData, type BoardProject } from "@/data/projects";
 
 export default function ProjectBoard() {
-  // Sample Data categorized by Status
-  const [projects] = useState({
-    overdue: [
-      {
-        id: "p1",
-        key: "SUNC-201",
-        title: "SunCart Payment Gateway",
-        description: "Integrate multi-currency checkout & Stripe webhooks.",
-        dueDate: "Aug 15, 2026",
-        progress: 85,
-        priority: "Urgent",
-        projectManager: { name: "Sarah Jenkins", avatar: "SJ" },
-        teamLead: { name: "Alex Rivera", avatar: "AR" },
-        developers: [
-          { name: "Shakibul Islam", avatar: "SI" },
-          { name: "David K.", avatar: "DK font-sans" },
-        ],
-      },
-    ] as Project[],
-    running: [
-      {
-        id: "p2",
-        key: "IDEA-104",
-        title: "Idea Vault Analytics Engine",
-        description:
-          "Build real-time trending algorithm & interaction metrics.",
-        dueDate: "Sep 10, 2026",
-        progress: 60,
-        priority: "High",
-        projectManager: { name: "Sarah Jenkins", avatar: "SJ" },
-        teamLead: { name: "Michael Chen", avatar: "MC" },
-        developers: [{ name: "Shakibul Islam", avatar: "SI" }],
-      },
-      {
-        id: "p3",
-        key: "TOB-302",
-        title: "Tobarok Points System",
-        description: "Implement Ad-to-Earn rewards calculation service.",
-        dueDate: "Sep 28, 2026",
-        progress: 40,
-        priority: "Medium",
-        projectManager: { name: "Elena Rostova", avatar: "ER" },
-        teamLead: { name: "Alex Rivera", avatar: "AR" },
-        developers: [
-          { name: "Shakibul Islam", avatar: "SI" },
-          { name: "Liam Vance", avatar: "LV" },
-        ],
-      },
-    ] as Project[],
-    upcoming: [
-      {
-        id: "p4",
-        key: "CHAT-401",
-        title: "Socket.io Chat Admin Ban",
-        description: "User account management panel & real-time moderation.",
-        dueDate: "Oct 15, 2026",
-        progress: 0,
-        priority: "Normal",
-        projectManager: { name: "Elena Rostova", avatar: "ER" },
-        teamLead: { name: "Michael Chen", avatar: "MC" },
-        developers: [{ name: "Shakibul Islam", avatar: "SI" }],
-      },
-    ] as Project[],
-    newProjects: [
-      {
-        id: "p5",
-        key: "AUTH-502",
-        title: "OAuth2 Provider Setup",
-        description: "Centralized authentication client with RBAC scope.",
-        dueDate: "Nov 01, 2026",
-        progress: 0,
-        priority: "High",
-        projectManager: { name: "Sarah Jenkins", avatar: "SJ" },
-        teamLead: { name: "Alex Rivera", avatar: "AR" },
-        developers: [
-          { name: "Shakibul Islam", avatar: "SI" },
-          { name: "Jessica T.", avatar: "JT" },
-        ],
-      },
-    ] as Project[],
-  });
+  const [projects] = React.useState(projectBoardData);
 
   return (
-    <div className="w-full min-h-screen bg-slate-50/50 p-6 sm:p-8 font-sans text-slate-800">
+    <div className="w-full min-h-screen bg-transparent p-6 sm:p-8 font-sans text-foreground">
       {/* Header Section */}
       <PathProvider />
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+          <h1 className="text-2xl font-bold text-foreground tracking-tight">
             Workspace Project Board
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             Monitor active sprints, overdue milestones, and team assignments.
           </p>
         </div>
 
         <button
           type="button"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors self-start md:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-xs font-semibold shadow-xs transition-colors self-start md:self-auto cursor-pointer"
         >
           <Plus className="w-4 h-4" />
           Create New Project
@@ -139,49 +41,49 @@ export default function ProjectBoard() {
 
       {/* Metrics Summary Strip */}
       <div className="max-w-7xl mx-auto grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
           <div className="p-3 bg-amber-50 text-amber-600 rounded-xl">
             <Clock className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Running</p>
-            <p className="text-xl font-bold text-slate-900">
+            <p className="text-xs font-medium text-muted-foreground">Running</p>
+            <p className="text-xl font-bold text-foreground">
               {projects.running.length}
             </p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
-          <div className="p-3 bg-blue-50 text-blue-600 rounded-xl">
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
+          <div className="p-3 bg-primary/10 text-primary rounded-xl">
             <FolderKanban className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Upcoming</p>
-            <p className="text-xl font-bold text-slate-900">
+            <p className="text-xs font-medium text-muted-foreground">Upcoming</p>
+            <p className="text-xl font-bold text-foreground">
               {projects.upcoming.length}
             </p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
           <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl">
             <Sparkles className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">New Projects</p>
-            <p className="text-xl font-bold text-slate-900">
+            <p className="text-xs font-medium text-muted-foreground">New Projects</p>
+            <p className="text-xl font-bold text-foreground">
               {projects.newProjects.length}
             </p>
           </div>
         </div>
 
-        <div className="bg-white border border-slate-200/80 rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
+        <div className="bg-card border border-border rounded-2xl p-4 flex items-center gap-4 shadow-2xs">
           <div className="p-3 bg-rose-50 text-rose-600 rounded-xl">
             <AlertTriangle className="w-5 h-5" />
           </div>
           <div>
-            <p className="text-xs font-medium text-slate-500">Overdue</p>
-            <p className="text-xl font-bold text-slate-900">
+            <p className="text-xs font-medium text-muted-foreground">Overdue</p>
+            <p className="text-xl font-bold text-foreground">
               {projects.overdue.length}
             </p>
           </div>
@@ -218,8 +120,8 @@ export default function ProjectBoard() {
         <BoardColumn
           title="Upcoming"
           count={projects.upcoming.length}
-          badgeBg="bg-blue-100 text-blue-700"
-          accentBorder="border-t-blue-500"
+          badgeBg="bg-primary/15 text-primary"
+          accentBorder="border-t-primary"
         >
           {projects.upcoming.map((project) => (
             <ProjectCard key={project.id} project={project} />
@@ -260,18 +162,18 @@ function BoardColumn({
 }) {
   return (
     <div
-      className={`bg-slate-100/70 border border-slate-200/80 border-t-4 ${accentBorder} rounded-2xl p-4 flex flex-col gap-4 min-h-125`}
+      className={`bg-muted/70 border border-border border-t-4 ${accentBorder} rounded-2xl p-4 flex flex-col gap-4 min-h-125`}
     >
       <div className="flex items-center justify-between pb-1">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-bold text-slate-800">{title}</h2>
+          <h2 className="text-sm font-bold text-foreground">{title}</h2>
           <span
             className={`px-2 py-0.5 text-xs font-bold rounded-full ${badgeBg}`}
           >
             {count}
           </span>
         </div>
-        <button type="button" className="text-slate-400 hover:text-slate-600">
+        <button type="button" className="text-muted-foreground hover:text-muted-foreground">
           <MoreVertical className="w-4 h-4" />
         </button>
       </div>
@@ -287,14 +189,14 @@ function ProjectCard({
   project,
   isOverdue = false,
 }: {
-  project: Project;
+  project: BoardProject;
   isOverdue?: boolean;
 }) {
   return (
-    <div className="bg-white border border-slate-200/90 rounded-xl p-4 shadow-2xs hover:shadow-md transition-all space-y-4">
+    <div className="bg-card border border-border rounded-xl p-4 shadow-2xs hover:shadow-md transition-all space-y-4">
       {/* Key Tag & Priority */}
       <div className="flex items-center justify-between text-xs">
-        <span className="font-mono text-slate-400 font-medium">
+        <span className="font-mono text-muted-foreground font-medium">
           {project.key}
         </span>
         <span
@@ -303,7 +205,7 @@ function ProjectCard({
               ? "bg-rose-50 text-rose-600 border border-rose-200/80"
               : project.priority === "High"
                 ? "bg-amber-50 text-amber-600 border border-amber-200/80"
-                : "bg-slate-100 text-slate-600"
+                : "bg-muted text-muted-foreground"
           }`}
         >
           {project.priority}
@@ -312,24 +214,24 @@ function ProjectCard({
 
       {/* Title & Description */}
       <div>
-        <h3 className="text-sm font-bold text-slate-900 leading-snug">
+        <h3 className="text-sm font-bold text-foreground leading-snug">
           {project.title}
         </h3>
-        <p className="text-xs text-slate-500 mt-1 line-clamp-2 leading-relaxed">
+        <p className="text-xs text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
           {project.description}
         </p>
       </div>
 
       {/* Progress Bar */}
       <div>
-        <div className="flex justify-between text-[11px] font-semibold text-slate-500 mb-1">
+        <div className="flex justify-between text-[11px] font-semibold text-muted-foreground mb-1">
           <span>Progress</span>
           <span>{project.progress}%</span>
         </div>
-        <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+        <div className="w-full bg-muted rounded-full h-1.5 overflow-hidden">
           <div
             className={`h-1.5 rounded-full ${
-              isOverdue ? "bg-rose-500" : "bg-blue-600"
+              isOverdue ? "bg-rose-500" : "bg-primary"
             }`}
             style={{ width: `${project.progress}%` }}
           />
@@ -337,22 +239,22 @@ function ProjectCard({
       </div>
 
       {/* Roles Breakdown */}
-      <div className="pt-2 border-t border-slate-100 text-[11px] space-y-1.5">
-        <div className="flex items-center justify-between text-slate-600">
-          <span className="text-slate-400">PM:</span>
+      <div className="pt-2 border-t border-border text-[11px] space-y-1.5">
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span className="text-muted-foreground">PM:</span>
           <span className="font-semibold">{project.projectManager.name}</span>
         </div>
-        <div className="flex items-center justify-between text-slate-600">
-          <span className="text-slate-400">Team Lead:</span>
+        <div className="flex items-center justify-between text-muted-foreground">
+          <span className="text-muted-foreground">Team Lead:</span>
           <span className="font-semibold">{project.teamLead.name}</span>
         </div>
       </div>
 
       {/* Footer: Due Date & Developers Avatars */}
-      <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+      <div className="pt-2 border-t border-border flex items-center justify-between">
         <div
           className={`inline-flex items-center gap-1 text-[11px] font-medium ${
-            isOverdue ? "text-rose-600 font-semibold" : "text-slate-500"
+            isOverdue ? "text-rose-600 font-semibold" : "text-muted-foreground"
           }`}
         >
           <Calendar className="w-3.5 h-3.5" />
@@ -365,7 +267,7 @@ function ProjectCard({
             <div
               key={idx}
               title={`Developer: ${dev.name}`}
-              className="w-6 h-6 rounded-full bg-blue-100 border-2 border-white flex items-center justify-center text-[9px] font-bold text-blue-700 shadow-2xs"
+              className="w-6 h-6 rounded-full bg-primary/15 border-2 border-white flex items-center justify-center text-[9px] font-bold text-primary shadow-2xs"
             >
               {dev.avatar}
             </div>

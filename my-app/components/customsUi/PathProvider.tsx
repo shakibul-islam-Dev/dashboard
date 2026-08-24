@@ -12,7 +12,7 @@ export default function PathProvider() {
   if (segments.length === 0) return null;
 
   return (
-    <nav className="flex items-center gap-2 text-sm">
+    <nav className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm min-w-0">
       {segments.map((segment, index) => {
         const path = `/${segments.slice(0, index + 1).join("/")}`;
         const isLast = index === segments.length - 1;
@@ -24,16 +24,16 @@ export default function PathProvider() {
         return (
           <div key={path} className="flex items-center gap-2">
             {index > 0 && (
-              <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
             )}
 
             <Link
               href={path}
               className={`${
                 isLast
-                  ? "text-gray-900 font-semibold"
-                  : "text-gray-500 font-medium"
-              } hover:text-blue-600 transition-colors`}
+                  ? "text-foreground font-semibold"
+                  : "text-muted-foreground font-medium"
+              } hover:text-primary transition-colors`}
             >
               {formattedName}
             </Link>

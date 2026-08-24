@@ -8,7 +8,6 @@ import {
   Trash2,
   Mail,
   MailOpen,
-  Tag,
   ChevronLeft,
   ChevronRight,
   Inbox,
@@ -17,69 +16,14 @@ import {
   Search,
   MoreVertical,
 } from "lucide-react";
-
-interface NotificationItem {
-  id: string;
-  sender: string;
-  subject: string;
-  snippet: string;
-  time: string;
-  category: "primary" | "social" | "updates";
-  isRead: boolean;
-  isStarred: boolean;
-}
-
-const INITIAL_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: "1",
-    sender: "GitHub",
-    subject: "[Security] High severity vulnerability found in next.js",
-    snippet:
-      "We found a potential security vulnerability in your repository main-branch...",
-    time: "10:42 AM",
-    category: "primary",
-    isRead: false,
-    isStarred: true,
-  },
-  {
-    id: "2",
-    sender: "Vercel Team",
-    subject: "Deployment Successful: production-api-v2",
-    snippet:
-      "Your project SunCart was successfully deployed to production in 42 seconds...",
-    time: "8:15 AM",
-    category: "updates",
-    isRead: false,
-    isStarred: false,
-  },
-  {
-    id: "3",
-    sender: "Sarah Chen",
-    subject: "Mentioned you in TASK-124: Authentication flow",
-    snippet:
-      "@shakib can you take a look at the token refresh interval issue before merged?",
-    time: "Yesterday",
-    category: "primary",
-    isRead: true,
-    isStarred: true,
-  },
-  {
-    id: "4",
-    sender: "LinkedIn",
-    subject: "Alex Morgan and 3 others viewed your profile",
-    snippet:
-      "See who is looking at your profile this week and connect with team leads...",
-    time: "Aug 21",
-    category: "social",
-    isRead: true,
-    isStarred: false,
-  },
-];
+import {
+  mailNotifications as initialNotifications,
+  type MailNotification,
+} from "@/data/notifications";
 
 export default function Notifications() {
-  const [notifications, setNotifications] = useState<NotificationItem[]>(
-    INITIAL_NOTIFICATIONS,
-  );
+  const [notifications, setNotifications] =
+    useState<MailNotification[]>(initialNotifications);
   const [activeTab, setActiveTab] = useState<"primary" | "social" | "updates">(
     "primary",
   );
@@ -141,34 +85,34 @@ export default function Notifications() {
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden font-sans text-slate-800">
+    <div className="w-full max-w-5xl mx-auto bg-card rounded-2xl shadow-xl border border-border overflow-hidden font-sans text-foreground">
       {/* Top Search Bar */}
-      <div className="px-6 py-3 border-b border-slate-100 flex items-center justify-between gap-4 bg-slate-50/50">
+      <div className="px-6 py-3 border-b border-border flex items-center justify-between gap-4 bg-muted/50">
         <div className="flex-1 max-w-2xl relative flex items-center">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5" />
+          <Search className="w-4 h-4 text-muted-foreground absolute left-3.5" />
           <input
             type="text"
             placeholder="Search mail and notifications..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-transparent focus:border-slate-300 rounded-lg text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
+            className="w-full pl-10 pr-4 py-2 bg-muted hover:bg-muted focus:bg-card border border-transparent focus:border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
           />
         </div>
-        <div className="flex items-center gap-1 text-slate-400">
-          <button className="p-1.5 hover:bg-slate-200/60 rounded-full transition-colors text-slate-600">
+        <div className="flex items-center gap-1 text-muted-foreground">
+          <button className="p-1.5 hover:bg-muted/60 rounded-full transition-colors text-muted-foreground">
             <MoreVertical className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {/* Action Toolbar */}
-      <div className="px-4 py-2 border-b border-slate-100 flex items-center justify-between text-slate-600 bg-white">
+      <div className="px-4 py-2 border-b border-border flex items-center justify-between text-muted-foreground bg-card">
         <div className="flex items-center gap-2">
           {/* Select All Checkbox */}
           <button
             onClick={toggleSelectAll}
-            className="p-1.5 hover:bg-slate-100 rounded text-slate-500 hover:text-slate-700"
+            className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
           >
             {allSelected ? (
-              <CheckSquare className="w-4 h-4 text-blue-600" />
+              <CheckSquare className="w-4 h-4 text-primary" />
             ) : (
               <Square className="w-4 h-4" />
             )}
@@ -176,25 +120,25 @@ export default function Notifications() {
 
           {/* Bulk Actions (Only visible when items are selected) */}
           {selectedIds.length > 0 ? (
-            <div className="flex items-center gap-1 pl-2 border-l border-slate-200 animate-in fade-in duration-150">
+            <div className="flex items-center gap-1 pl-2 border-l border-border animate-in fade-in duration-150">
               <button
                 onClick={() => markSelectedAsRead(true)}
                 title="Mark as read"
-                className="p-1.5 hover:bg-slate-100 rounded text-slate-600"
+                className="p-1.5 hover:bg-muted rounded text-muted-foreground"
               >
                 <MailOpen className="w-4 h-4" />
               </button>
               <button
                 onClick={() => markSelectedAsRead(false)}
                 title="Mark as unread"
-                className="p-1.5 hover:bg-slate-100 rounded text-slate-600"
+                className="p-1.5 hover:bg-muted rounded text-muted-foreground"
               >
                 <Mail className="w-4 h-4" />
               </button>
               <button
                 onClick={deleteSelected}
                 title="Delete"
-                className="p-1.5 hover:bg-slate-100 rounded text-rose-600"
+                className="p-1.5 hover:bg-muted rounded text-rose-600"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -203,15 +147,15 @@ export default function Notifications() {
         </div>
 
         {/* Pagination Controls */}
-        <div className="flex items-center gap-3 text-xs text-slate-500">
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>
             1–{filteredNotifications.length} of {filteredNotifications.length}
           </span>
           <div className="flex items-center gap-1">
-            <button className="p-1 hover:bg-slate-100 rounded disabled:opacity-30">
+            <button className="p-1 hover:bg-muted rounded disabled:opacity-30">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <button className="p-1 hover:bg-slate-100 rounded disabled:opacity-30">
+            <button className="p-1 hover:bg-muted rounded disabled:opacity-30">
               <ChevronRight className="w-4 h-4" />
             </button>
           </div>
@@ -219,13 +163,13 @@ export default function Notifications() {
       </div>
 
       {/* Gmail-Style Category Tabs */}
-      <div className="flex border-b border-slate-200 bg-white">
+      <div className="flex border-b border-border bg-card">
         <button
           onClick={() => setActiveTab("primary")}
           className={`flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === "primary"
-              ? "border-blue-600 text-blue-600 bg-blue-50/20"
-              : "border-transparent text-slate-600 hover:bg-slate-50"
+              ? "border-primary text-primary bg-primary/20"
+              : "border-transparent text-muted-foreground hover:bg-muted"
           }`}
         >
           <Inbox className="w-4 h-4" />
@@ -236,8 +180,8 @@ export default function Notifications() {
           onClick={() => setActiveTab("updates")}
           className={`flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === "updates"
-              ? "border-blue-600 text-blue-600 bg-blue-50/20"
-              : "border-transparent text-slate-600 hover:bg-slate-50"
+              ? "border-primary text-primary bg-primary/20"
+              : "border-transparent text-muted-foreground hover:bg-muted"
           }`}
         >
           <AlertCircle className="w-4 h-4" />
@@ -248,8 +192,8 @@ export default function Notifications() {
           onClick={() => setActiveTab("social")}
           className={`flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 transition-colors ${
             activeTab === "social"
-              ? "border-blue-600 text-blue-600 bg-blue-50/20"
-              : "border-transparent text-slate-600 hover:bg-slate-50"
+              ? "border-primary text-primary bg-primary/20"
+              : "border-transparent text-muted-foreground hover:bg-muted"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -258,9 +202,9 @@ export default function Notifications() {
       </div>
 
       {/* Notifications List */}
-      <div className="divide-y divide-slate-100">
+      <div className="divide-y divide-border">
         {filteredNotifications.length === 0 ? (
-          <div className="py-12 text-center text-xs text-slate-400">
+          <div className="py-12 text-center text-xs text-muted-foreground">
             No notifications in this category.
           </div>
         ) : (
@@ -274,10 +218,10 @@ export default function Notifications() {
                 onClick={() => handleRowClick(item.id)}
                 className={`group flex flex-col cursor-pointer transition-colors ${
                   isSelected
-                    ? "bg-blue-50/60"
+                    ? "bg-primary/30"
                     : item.isRead
-                      ? "bg-slate-50/40 hover:bg-slate-100/60"
-                      : "bg-white font-semibold hover:bg-slate-50"
+                      ? "bg-muted/40 hover:bg-muted/60"
+                      : "bg-card font-semibold hover:bg-muted"
                 }`}
               >
                 {/* Compact Row Header */}
@@ -285,10 +229,10 @@ export default function Notifications() {
                   {/* Row Checkbox */}
                   <button
                     onClick={(e) => toggleSelectOne(item.id, e)}
-                    className="text-slate-400 hover:text-slate-600"
+                    className="text-muted-foreground hover:text-muted-foreground"
                   >
                     {isSelected ? (
-                      <CheckSquare className="w-4 h-4 text-blue-600" />
+                      <CheckSquare className="w-4 h-4 text-primary" />
                     ) : (
                       <Square className="w-4 h-4" />
                     )}
@@ -297,7 +241,7 @@ export default function Notifications() {
                   {/* Star */}
                   <button
                     onClick={(e) => toggleStar(item.id, e)}
-                    className="text-slate-300 hover:text-amber-400"
+                    className="text-muted-foreground/70 hover:text-destructive"
                   >
                     <Star
                       className={`w-4 h-4 ${
@@ -307,33 +251,33 @@ export default function Notifications() {
                   </button>
 
                   {/* Sender Name */}
-                  <div className="w-32 shrink-0 truncate text-xs text-slate-900">
+                  <div className="w-24 sm:w-32 shrink-0 truncate text-xs text-foreground">
                     {item.sender}
                   </div>
 
                   {/* Subject & Snippet Container */}
                   <div className="flex-1 min-w-0 flex items-center gap-2 text-xs">
-                    <span className="text-slate-900 truncate">
+                    <span className="text-foreground truncate">
                       {item.subject}
                     </span>
-                    <span className="text-slate-400 font-normal truncate">
+                    <span className="text-muted-foreground font-normal truncate hidden md:inline">
                       — {item.snippet}
                     </span>
                   </div>
 
                   {/* Date/Time */}
-                  <div className="w-20 text-right shrink-0 text-[11px] font-mono text-slate-400 group-hover:hidden">
+                  <div className="w-20 text-right shrink-0 text-[11px] font-mono text-muted-foreground group-hover:hidden">
                     {item.time}
                   </div>
 
                   {/* Hover Quick Action Icons */}
-                  <div className="hidden group-hover:flex items-center gap-1 shrink-0 text-slate-400">
+                  <div className="hidden group-hover:flex items-center gap-1 shrink-0 text-muted-foreground">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         deleteSelected();
                       }}
-                      className="p-1 hover:text-rose-600 hover:bg-slate-200/50 rounded"
+                      className="p-1 hover:text-rose-600 hover:bg-muted/50 rounded"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -346,7 +290,7 @@ export default function Notifications() {
                           ),
                         );
                       }}
-                      className="p-1 hover:text-slate-700 hover:bg-slate-200/50 rounded"
+                      className="p-1 hover:text-foreground hover:bg-muted/50 rounded"
                     >
                       {item.isRead ? (
                         <Mail className="w-3.5 h-3.5" />
@@ -359,13 +303,13 @@ export default function Notifications() {
 
                 {/* Inline Expanded View */}
                 {isExpanded && (
-                  <div className="px-12 pb-4 pt-1 text-xs text-slate-600 border-t border-slate-100 bg-slate-50/50">
+                  <div className="px-6 sm:px-12 pb-4 pt-1 text-xs text-muted-foreground border-t border-border bg-muted/50">
                     <p className="leading-relaxed">{item.snippet}</p>
                     <div className="mt-3 flex items-center gap-2">
-                      <button className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-700 hover:bg-slate-50 font-medium text-[11px]">
+                      <button className="px-3 py-1 bg-card border border-border rounded text-foreground hover:bg-muted font-medium text-[11px]">
                         Reply
                       </button>
-                      <button className="px-3 py-1 bg-white border border-slate-200 rounded text-slate-700 hover:bg-slate-50 font-medium text-[11px]">
+                      <button className="px-3 py-1 bg-card border border-border rounded text-foreground hover:bg-muted font-medium text-[11px]">
                         Forward
                       </button>
                     </div>

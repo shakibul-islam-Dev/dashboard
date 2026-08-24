@@ -16,11 +16,13 @@ import {
   FolderKanban,
   Plus,
 } from "lucide-react";
+import { createTaskDefaults } from "@/data/tasks";
+import { workspaceInfo } from "@/data/notifications";
 
 interface CreateTaskModalProps {
   isOpen?: boolean;
   onClose?: () => void;
-  onSubmit?: (data: any) => void;
+  onSubmit?: (data: Record<string, string | string[]>) => void;
 }
 
 export default function CreateTaskModal({
@@ -30,11 +32,13 @@ export default function CreateTaskModal({
 }: CreateTaskModalProps) {
   const [taskTitle, setTaskTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [status, setStatus] = useState("Todo");
-  const [priority, setPriority] = useState("Medium");
-  const [assignee, setAssignee] = useState("Sarah Chen");
+  const [status, setStatus] = useState(createTaskDefaults.statuses[0]);
+  const [priority, setPriority] = useState(createTaskDefaults.priorities[1]);
+  const [assignee, setAssignee] = useState(
+    createTaskDefaults.defaultAssignee,
+  );
   const [dueDate, setDueDate] = useState("");
-  const [tags, setTags] = useState<string[]>(["Frontend", "Design System"]);
+  const [tags, setTags] = useState<string[]>(createTaskDefaults.defaultTags);
   const [tagInput, setTagInput] = useState("");
   const [blockedQuery, setBlockedQuery] = useState("");
 
@@ -72,27 +76,29 @@ export default function CreateTaskModal({
   };
 
   return (
-    <div className="relative w-full min-h-screen bg-slate-100 font-sans text-slate-800">
+    <div className="relative w-full min-h-screen bg-muted font-sans text-foreground">
       {/* Background App Dashboard Mockup (Blurred Under Modal Overlay) */}
       <div className="flex h-screen overflow-hidden filter blur-xs select-none pointer-events-none">
         {/* Sidebar */}
-        <div className="w-64 bg-slate-700 text-slate-200 p-4 space-y-6 flex flex-col justify-between">
+        <div className="w-40 sm:w-64 bg-foreground text-background p-4 space-y-6 flex flex-col justify-between shrink-0">
           <div>
             <div className="flex items-center gap-3 mb-8">
-              <div className="w-8 h-8 rounded-lg bg-slate-400/30" />
+              <div className="w-8 h-8 rounded-lg bg-background/20" />
               <div>
-                <h3 className="font-bold text-white text-sm">
-                  Acme Development
+                <h3 className="font-bold text-background text-sm">
+                  {workspaceInfo.name}
                 </h3>
-                <p className="text-[11px] text-slate-400">Enterprise Plan</p>
+                <p className="text-[11px] text-background/60">
+                  {workspaceInfo.plan}
+                </p>
               </div>
             </div>
-            <button className="w-full py-2 bg-blue-600/80 text-white rounded-lg text-xs font-medium flex items-center justify-center gap-2">
+            <button className="w-full py-2 bg-primary/80 text-primary-foreground rounded-lg text-xs font-medium flex items-center justify-center gap-2">
               <Plus className="w-4 h-4" /> New Project
             </button>
             <div className="mt-6 space-y-2">
-              <div className="p-2 bg-slate-600/50 rounded-lg text-xs flex items-center gap-2">
-                <FolderKanban className="w-4 h-4 text-slate-300" /> Projects
+              <div className="p-2 bg-background/10 rounded-lg text-xs flex items-center gap-2">
+                <FolderKanban className="w-4 h-4 text-background/70" /> Projects
               </div>
             </div>
           </div>
@@ -100,38 +106,38 @@ export default function CreateTaskModal({
 
         {/* Top Header & Main Workspace Area */}
         <div className="flex-1 flex flex-col">
-          <header className="h-14 border-b border-slate-200 bg-white px-6 flex items-center justify-between">
+          <header className="h-14 border-b border-border bg-card px-6 flex items-center justify-between">
             <div className="flex items-center gap-6">
-              <span className="font-bold text-slate-800">TaskBoard</span>
-              <nav className="flex gap-4 text-xs font-medium text-slate-500">
+              <span className="font-bold text-foreground">TaskBoard</span>
+              <nav className="flex gap-4 text-xs font-medium text-muted-foreground">
                 <span>Views</span>
-                <span className="text-blue-600 font-semibold border-b-2 border-blue-600 pb-4">
+                <span className="text-primary font-semibold border-b-2 border-primary pb-4">
                   Board
                 </span>
                 <span>Timeline</span>
               </nav>
             </div>
-            <div className="flex items-center gap-4 text-slate-400">
+            <div className="flex items-center gap-4 text-muted-foreground">
               <Search className="w-4 h-4" />
               <Bell className="w-4 h-4" />
               <HelpCircle className="w-4 h-4" />
-              <div className="w-7 h-7 rounded-full bg-slate-300" />
+              <div className="w-7 h-7 rounded-full bg-muted-foreground/30" />
             </div>
           </header>
         </div>
       </div>
 
       {/* Modal Overlay Context */}
-      <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-2xs flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 bg-background/60 backdrop-blur-2xs flex items-center justify-center p-4">
         {/* Modal Window Container */}
-        <div className="w-full max-w-135 bg-white rounded-xl shadow-2xl border border-slate-200/90 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        <div className="w-full max-w-135 bg-card rounded-xl shadow-2xl border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-150">
           {/* Modal Header */}
-          <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white">
-            <h2 className="text-base font-bold text-slate-900">Create Task</h2>
+          <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-card">
+            <h2 className="text-base font-bold text-foreground">Create Task</h2>
             <button
               type="button"
               onClick={onClose}
-              className="p-1 text-slate-400 hover:text-slate-600 rounded-lg transition-colors cursor-pointer"
+              className="p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -141,7 +147,7 @@ export default function CreateTaskModal({
           <form onSubmit={handleSubmit} className="p-6 space-y-5">
             {/* Task Title Input */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                 Task Title <span className="text-rose-500">*</span>
               </label>
               <input
@@ -150,28 +156,28 @@ export default function CreateTaskModal({
                 placeholder="E.g., Update user authentication flow"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-white border border-blue-600 rounded-lg text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden ring-2 ring-blue-500/20"
+                className="w-full px-3.5 py-2.5 bg-card border border-primary rounded-lg text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden ring-2 ring-ring/20"
               />
             </div>
 
             {/* Description with Rich Editor Toolbar */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                 Description
               </label>
-              <div className="border border-slate-200 rounded-lg overflow-hidden bg-white focus-within:border-blue-500 transition-colors">
+              <div className="border border-border rounded-lg overflow-hidden bg-card focus-within:border-primary transition-colors">
                 {/* Editor Formatting Bar */}
-                <div className="flex items-center gap-3 px-3 py-1.5 border-b border-slate-100 bg-slate-50/50 text-slate-600">
-                  <button type="button" className="hover:text-slate-900">
+                <div className="flex items-center gap-3 px-3 py-1.5 border-b border-border bg-muted/50 text-muted-foreground">
+                  <button type="button" className="hover:text-foreground">
                     <Bold className="w-3.5 h-3.5" />
                   </button>
-                  <button type="button" className="hover:text-slate-900">
+                  <button type="button" className="hover:text-foreground">
                     <Italic className="w-3.5 h-3.5" />
                   </button>
-                  <button type="button" className="hover:text-slate-900">
+                  <button type="button" className="hover:text-foreground">
                     <List className="w-3.5 h-3.5" />
                   </button>
-                  <button type="button" className="hover:text-slate-900">
+                  <button type="button" className="hover:text-foreground">
                     <Link2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
@@ -180,71 +186,69 @@ export default function CreateTaskModal({
                   placeholder="Add detailed context, acceptance criteria, or technical notes..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full p-3.5 text-xs font-medium text-slate-900 placeholder:text-slate-400 focus:outline-hidden resize-none"
+                  className="w-full p-3.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden resize-none"
                 />
               </div>
             </div>
 
             {/* Status & Priority Row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+                <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Status
                 </label>
                 <div className="relative">
                   <select
                     value={status}
                     onChange={(e) => setStatus(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500 pr-8"
+                    className="w-full appearance-none px-3.5 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary pr-8"
                   >
-                    <option>Todo</option>
-                    <option>In Progress</option>
-                    <option>Review</option>
-                    <option>Done</option>
+                    {createTaskDefaults.statuses.map((s) => (
+                      <option key={s}>{s}</option>
+                    ))}
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+                <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Priority
                 </label>
                 <div className="relative">
                   <select
                     value={priority}
                     onChange={(e) => setPriority(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500 pr-8"
+                    className="w-full appearance-none px-3.5 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary pr-8"
                   >
-                    <option>Medium</option>
-                    <option>Low</option>
-                    <option>High</option>
-                    <option>Urgent</option>
+                    {createTaskDefaults.priorities.map((p) => (
+                      <option key={p}>{p}</option>
+                    ))}
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
             </div>
 
             {/* Assignee & Due Date Row */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+                <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Assignee
                 </label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-2.5 w-5 h-5 rounded-full bg-slate-300 overflow-hidden flex items-center justify-center text-[10px] font-bold text-slate-700">
-                    SC
+                  <div className="absolute left-2.5 w-5 h-5 rounded-full bg-muted-foreground/30 overflow-hidden flex items-center justify-center text-[10px] font-bold text-foreground">
+                    {createTaskDefaults.defaultAssigneeInitials}
                   </div>
                   <input
                     type="text"
                     value={assignee}
                     onChange={(e) => setAssignee(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 bg-white border border-slate-200 rounded-lg text-xs font-semibold text-slate-800 focus:outline-hidden focus:border-blue-500"
+                    className="w-full pl-9 pr-8 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary"
                   />
                   <button
                     type="button"
-                    className="absolute right-2.5 text-slate-400 hover:text-slate-600"
+                    className="absolute right-2.5 text-muted-foreground hover:text-foreground"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
                   </button>
@@ -252,17 +256,17 @@ export default function CreateTaskModal({
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+                <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Due Date
                 </label>
                 <div className="relative">
-                  <Calendar className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <Calendar className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     type="text"
                     placeholder="mm/dd/yyyy"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full pl-9 px-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500"
+                    className="w-full pl-9 px-3.5 py-2 bg-card border border-border rounded-lg text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-primary"
                   />
                 </div>
               </div>
@@ -270,20 +274,20 @@ export default function CreateTaskModal({
 
             {/* Tags Pill Input */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                 Tags
               </label>
-              <div className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg flex flex-wrap items-center gap-2 focus-within:border-blue-500 min-h-9.5">
+              <div className="w-full px-3 py-1.5 bg-card border border-border rounded-lg flex flex-wrap items-center gap-2 focus-within:border-primary min-h-9.5">
                 {tags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-blue-50 text-blue-700 rounded-md text-[11px] font-semibold border border-blue-100"
+                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary rounded-md text-[11px] font-semibold border border-primary/20"
                   >
                     {tag}
                     <button
                       type="button"
                       onClick={() => handleRemoveTag(tag)}
-                      className="hover:text-blue-900 cursor-pointer"
+                      className="hover:text-primary cursor-pointer"
                     >
                       <X className="w-3 h-3" />
                     </button>
@@ -295,24 +299,24 @@ export default function CreateTaskModal({
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
-                  className="flex-1 bg-transparent text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-hidden min-w-20"
+                  className="flex-1 bg-transparent text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden min-w-20"
                 />
               </div>
             </div>
 
             {/* Blocks / Blocked By Dependencies Field */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 tracking-wider uppercase mb-1.5">
+              <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                 Blocks / Blocked By
               </label>
               <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search tasks by ID or name (e.g., TSK-102)"
                   value={blockedQuery}
                   onChange={(e) => setBlockedQuery(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-hidden focus:border-blue-500"
+                  className="w-full pl-9 pr-3.5 py-2 bg-card border border-border rounded-lg text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-primary"
                 />
               </div>
             </div>
@@ -322,13 +326,13 @@ export default function CreateTaskModal({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-600 text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                className="px-4 py-2 bg-card hover:bg-muted text-muted-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+                className="px-4 py-2 bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
               >
                 Create Task
               </button>

@@ -2,6 +2,7 @@
 
 import React, { useEffect } from "react";
 import { AlertTriangle, ShieldAlert, X } from "lucide-react";
+import { dependencyIncompleteInfo } from "@/data/tasks";
 
 interface DependencyModalProps {
   isOpen: boolean;
@@ -37,12 +38,12 @@ export default function DependencyIncompleteModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
+        className="fixed inset-0 bg-background/60 backdrop-blur-xs transition-opacity animate-in fade-in duration-200"
         onClick={onClose}
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden font-sans text-slate-800 z-10 my-auto border border-slate-200/80 animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md bg-card rounded-xl shadow-2xl overflow-hidden font-sans text-foreground z-10 my-auto border border-border animate-in zoom-in-95 duration-200">
         {/* Header Section */}
         <div className="px-6 pt-6 pb-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -50,13 +51,13 @@ export default function DependencyIncompleteModal({
             <div className="w-9 h-9 rounded-lg bg-amber-50 border border-amber-200/70 flex items-center justify-center text-amber-500 shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
-            <h2 className="text-base font-bold text-slate-900">
+            <h2 className="text-base font-bold text-foreground">
               Dependency Incomplete
             </h2>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-50"
+            className="text-muted-foreground hover:text-muted-foreground transition-colors p-1 rounded-md hover:bg-muted"
           >
             <X className="w-5 h-5" />
           </button>
@@ -64,46 +65,48 @@ export default function DependencyIncompleteModal({
 
         {/* Modal Body */}
         <div className="px-6 space-y-4">
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             This task depends on another task that has not been completed yet.
           </p>
 
           {/* Prerequisite Task Box */}
-          <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3.5 space-y-1.5">
+          <div className="bg-muted border border-border rounded-lg p-3.5 space-y-1.5">
             <div className="flex items-center justify-between">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Prerequisite Task
               </span>
               {/* Status Badge */}
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-blue-50 text-blue-600 border border-blue-200/60">
-                <span className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                In Progress
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/30/60">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary/100" />
+                {dependencyIncompleteInfo.prerequisiteTask.status}
               </span>
             </div>
 
             <div className="flex items-center gap-2 pt-0.5">
-              <span className="text-xs font-mono font-medium text-slate-400">
-                TASK-102
+              <span className="text-xs font-mono font-medium text-muted-foreground">
+                {dependencyIncompleteInfo.prerequisiteTask.code}
               </span>
-              <span className="text-xs font-semibold text-slate-800">
-                Configure authentication
+              <span className="text-xs font-semibold text-foreground">
+                {dependencyIncompleteInfo.prerequisiteTask.title}
               </span>
             </div>
           </div>
 
-          <p className="text-xs text-slate-500 leading-relaxed">
+          <p className="text-xs text-muted-foreground leading-relaxed">
             You are attempting to move the current task to{" "}
-            <strong className="text-slate-700 font-semibold">Done</strong>, but
-            its prerequisite is still being worked on.
+            <strong className="text-foreground font-semibold">
+              {dependencyIncompleteInfo.targetStatus}
+            </strong>
+            , but its prerequisite is still being worked on.
           </p>
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 mt-6 bg-slate-50/50 border-t border-slate-100 flex items-center justify-end gap-3">
+        <div className="px-6 py-4 mt-6 bg-muted/50 border-t border-border flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors"
+            className="px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
           >
             Cancel
           </button>

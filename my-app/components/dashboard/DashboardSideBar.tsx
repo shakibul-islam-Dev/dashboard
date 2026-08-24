@@ -1,172 +1,183 @@
 "use client";
 import {
   CircleQuestionMark,
-  FolderOpenDot,
-  LayoutDashboard,
   PanelRightClose,
   PanelLeftClose,
   Settings,
   UserRound,
-  FolderRoot,
-  ClipboardCheck,
-  ClockFading,
-  ChartColumnBig,
+  X,
 } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  dashboardSidebarLinks as sidebarLinks,
+  currentUser,
+} from "@/data/navigation";
 
-const dashboardSidebarLink = [
-  {
-    id: 1,
-    icon: <LayoutDashboard size={20} />,
-    name: "Dashboard",
-    link: "/dashboard",
-  },
-  {
-    id: 2,
-    icon: <FolderOpenDot size={20} />,
-    name: "Projects",
-    link: "/dashboard/projects",
-  },
-  {
-    id: 3,
-    icon: <FolderRoot size={20} />,
-    name: "Projects Board",
-    link: "/dashboard/project-board",
-  },
-  {
-    id: 4,
-    icon: <ClipboardCheck size={20} />,
-    name: "My Tasks",
-    link: "/dashboard/my-task",
-  },
-  {
-    id: 5,
-    icon: <ClockFading size={20} />,
-    name: "Activity",
-    link: "/dashboard/activity",
-  },
-  {
-    id: 6,
-    icon: <UserRound size={20} />,
-    name: "Team",
-    link: "/dashboard/team",
-  },
-  {
-    id: 7,
-    icon: <ChartColumnBig size={20} />,
-    name: "Analytics",
-    link: "/dashboard/analytics",
-  },
-];
+interface DashboardSideBarProps {
+  mobileOpen: boolean;
+  onMobileClose: () => void;
+}
 
-export default function DashboardSideBar() {
+export default function DashboardSideBar({
+  mobileOpen,
+  onMobileClose,
+}: DashboardSideBarProps) {
   const [isOpen, setIsOpen] = useState<boolean>(true);
+
+  const pathname = usePathname();
 
   const toggleSidebar = () => {
     setIsOpen(!isOpen);
   };
 
+  const isActiveRoute = (link: string) => {
+    if (link === "/dashboard") return pathname === "/dashboard";
+    return pathname === link || pathname.startsWith(`${link}/`);
+  };
+
+  const getLinkClasses = (active: boolean) =>
+    `flex items-center gap-3 p-2.5 rounded-lg transition-colors group ${
+      active
+        ? "text-primary bg-primary/10 font-semibold"
+        : "text-muted-foreground hover:text-primary hover:bg-primary/10"
+    }`;
+
+  const labelClasses = (extra: string = "") =>
+    `whitespace-nowrap font-medium transition-all duration-300 ${
+      mobileOpen ? "block opacity-100" : "hidden opacity-0"
+    } ${isOpen ? "lg:block lg:opacity-100" : "lg:hidden lg:opacity-0"} ${extra}`;
+
   return (
-    <aside
-      className={`h-screen flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ${
-        isOpen ? "w-64" : "w-20"
-      }`}
-    >
-      {/* Top Section: Logo/Title & Toggle */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 h-16">
-        <div
-          className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
-            isOpen ? "w-auto opacity-100" : "w-0 opacity-0 hidden"
-          }`}
-        >
-          <h1 className="font-bold text-xl text-gray-800">Task Board</h1>
-        </div>
-        <button
-          onClick={toggleSidebar}
-          className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors mx-auto"
-          title="Toggle Sidebar"
-        >
-          {isOpen ? (
-            <PanelLeftClose size={20} />
-          ) : (
-            <PanelRightClose size={20} />
-          )}
-        </button>
-      </div>
+    <>
+      {/* Mobile Backdrop */}
+      <div
+        onClick={onMobileClose}
+        className={`fixed inset-0 z-40 bg-background/60 backdrop-blur-xs transition-opacity lg:hidden ${
+          mobileOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+        }`}
+      />
 
-      {/* Main Navigation Links */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3">
-        <ul className="flex flex-col gap-2">
-          {dashboardSidebarLink.map((sidebar) => (
-            <li key={sidebar.id}>
-              <Link
-                href={sidebar.link}
-                className="flex items-center gap-3 p-2.5 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors group"
-                title={!isOpen ? sidebar.name : ""}
-              >
-                <div className="min-w-fit">{sidebar.icon}</div>
-                <span
-                  className={`whitespace-nowrap transition-all duration-300 font-medium ${
-                    isOpen ? "opacity-100 block" : "opacity-0 hidden"
-                  }`}
-                >
-                  {sidebar.name}
-                </span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-
-      {/* Bottom Section: Settings, Help & Profile */}
-      <div className="border-t border-gray-200 p-3 flex flex-col gap-2">
-        <div className="flex flex-col gap-2 pb-2 border-b border-gray-100">
-          <Link
-            href="/dashboard/settings"
-            className="flex items-center gap-3 p-2.5 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title={!isOpen ? "Settings" : ""}
-          >
-            <div className="min-w-fit">
-              <Settings size={20} />
-            </div>
-            <span
-              className={`whitespace-nowrap font-medium transition-all duration-300 ${isOpen ? "opacity-100 block" : "opacity-0 hidden"}`}
-            >
-              Settings
-            </span>
-          </Link>
-          <Link
-            href="/dashboard/help&support"
-            className="flex items-center gap-3 p-2.5 rounded-lg text-gray-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
-            title={!isOpen ? "Help & Support" : ""}
-          >
-            <div className="min-w-fit">
-              <CircleQuestionMark size={20} />
-            </div>
-            <span
-              className={`whitespace-nowrap font-medium transition-all duration-300 ${isOpen ? "opacity-100 block" : "opacity-0 hidden"}`}
-            >
-              Help & Support
-            </span>
-          </Link>
-        </div>
-
-        {/* User Profile */}
-        <div
-          className={`flex items-center gap-3 p-2 mt-2 rounded-lg ${isOpen ? "hover:bg-gray-50" : ""} transition-colors cursor-pointer`}
-        >
-          <div className="p-2 bg-blue-100 text-blue-600 rounded-full min-w-fit">
-            <UserRound size={20} />
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-64 h-screen flex flex-col bg-card border-r border-border transition-all duration-300 lg:static lg:z-auto lg:translate-x-0 ${
+          mobileOpen
+            ? "translate-x-0 shadow-2xl lg:shadow-none"
+            : "-translate-x-full"
+        } ${isOpen ? "lg:w-64" : "lg:w-20"}`}
+      >
+        {/* Top Section: Logo/Title & Toggle */}
+        <div className="flex items-center justify-between p-4 border-b border-border h-16">
+          <div className={labelClasses("overflow-hidden")}>
+            <h1 className="font-bold text-xl text-foreground">
+              Task Board
+            </h1>
           </div>
+
+          {/* Desktop Collapse Toggle */}
+          <button
+            onClick={toggleSidebar}
+            className={`hidden lg:block p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors ${
+              isOpen ? "" : "mx-auto"
+            }`}
+            title="Toggle Sidebar"
+          >
+            {isOpen ? (
+              <PanelLeftClose size={20} />
+            ) : (
+              <PanelRightClose size={20} />
+            )}
+          </button>
+
+          {/* Mobile Close Button */}
+          <button
+            onClick={onMobileClose}
+            className="lg:hidden p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors ml-auto"
+            title="Close Sidebar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Main Navigation Links */}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden p-3">
+          <ul className="flex flex-col gap-2">
+            {sidebarLinks.map((sidebar) => {
+              const active = isActiveRoute(sidebar.link);
+              return (
+                <li key={sidebar.id}>
+                  <Link
+                    href={sidebar.link}
+                    onClick={onMobileClose}
+                    className={getLinkClasses(active)}
+                    title={!isOpen && !mobileOpen ? sidebar.name : ""}
+                  >
+                    <div
+                      className={`min-w-fit ${active ? "text-primary" : "text-muted-foreground group-hover:text-primary"} transition-colors`}
+                    >
+                      <sidebar.icon size={20} />
+                    </div>
+                    <span className={labelClasses()}>{sidebar.name}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Bottom Section: Settings, Help & Profile */}
+        <div className="border-t border-border p-3 flex flex-col gap-2">
+          <div className="flex flex-col gap-2 pb-2 border-b border-border">
+            <Link
+              href="/dashboard/settings"
+              onClick={onMobileClose}
+              className={getLinkClasses(isActiveRoute("/dashboard/settings"))}
+              title={!isOpen && !mobileOpen ? "Settings" : ""}
+            >
+              <div className="min-w-fit">
+                <Settings size={20} />
+              </div>
+              <span className={labelClasses()}>Settings</span>
+            </Link>
+            <Link
+              href="/dashboard/help&support"
+              onClick={onMobileClose}
+              className={getLinkClasses(isActiveRoute("/dashboard/help&support"))}
+              title={!isOpen && !mobileOpen ? "Help & Support" : ""}
+            >
+              <div className="min-w-fit">
+                <CircleQuestionMark size={20} />
+              </div>
+              <span className={labelClasses()}>Help & Support</span>
+            </Link>
+          </div>
+
+          {/* User Profile */}
           <div
-            className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${isOpen ? "opacity-100 w-auto block" : "opacity-0 w-0 hidden"}`}
+            className={`flex items-center gap-3 p-2 mt-2 rounded-lg transition-colors cursor-pointer ${
+              isOpen || mobileOpen
+                ? "hover:bg-muted"
+                : ""
+            }`}
           >
-            <h1 className="font-bold text-sm text-gray-800">Alex Morgan</h1>
-            <p className="text-xs text-gray-500">Product Manager</p>
+            <div className="p-2 bg-primary/15 text-primary rounded-full min-w-fit">
+              <UserRound size={20} />
+            </div>
+            <div
+              className={`overflow-hidden whitespace-nowrap transition-all duration-300 ${
+                mobileOpen ? "opacity-100 block" : "opacity-0 hidden"
+              } ${isOpen ? "lg:block lg:opacity-100" : "lg:hidden lg:opacity-0"}`}
+            >
+              <h1 className="font-bold text-sm text-foreground">
+                {currentUser.name}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                {currentUser.role}
+              </p>
+            </div>
           </div>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }

@@ -2,7 +2,6 @@ import PathProvider from "@/components/customsUi/PathProvider";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -11,13 +10,13 @@ import {
   Clock,
   FileText,
   ListTodo,
-  MoreVertical,
   Plus,
   Users,
   Zap,
   ArrowLeft,
 } from "lucide-react";
 import Link from "next/link";
+import { getProjectDetails } from "@/data/projects";
 
 interface ProjectDetailsProps {
   params: Promise<{
@@ -30,69 +29,11 @@ export default async function ProjectDetailPage({
 }: ProjectDetailsProps) {
   const { id } = await params;
 
-  // Mock data mapping based on project ID
-  const projectData = {
-    id: id,
-    title:
-      id
-        .split("-")
-        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(" ") || "Project Details",
-    description:
-      "Comprehensive platform overhaul focusing on scalability, user performance, design systems, and security compliance.",
-    status: "In Progress",
-    dueDate: "Oct 28, 2026",
-    progress: 68,
-    members: [
-      {
-        name: "Sarah Jenkins",
-        role: "Lead Designer",
-        avatar: "/avatars/01.png",
-        fallback: "SJ",
-      },
-      {
-        name: "Mike Chen",
-        role: "Frontend Dev",
-        avatar: "/avatars/02.png",
-        fallback: "MC",
-      },
-      {
-        name: "Elena Rostova",
-        role: "Backend Dev",
-        avatar: "/avatars/03.png",
-        fallback: "ER",
-      },
-    ],
-    stats: {
-      totalTasks: 34,
-      completedTasks: 23,
-      pendingTasks: 11,
-      hoursLogged: 142,
-    },
-    tasks: [
-      {
-        id: 1,
-        title: "Finalize high-fidelity wireframes",
-        status: "Completed",
-        assignee: "Sarah Jenkins",
-      },
-      {
-        id: 2,
-        title: "Setup authentication API routes & RBAC",
-        status: "In Progress",
-        assignee: "Elena Rostova",
-      },
-      {
-        id: 3,
-        title: "Optimize bundle size & Next.js page load times",
-        status: "Pending",
-        assignee: "Mike Chen",
-      },
-    ],
-  };
+  // Demo data fetched from central data folder
+  const projectData = getProjectDetails(id);
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 bg-gray-50/50 min-h-screen">
+    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 bg-transparent min-h-screen">
       {/* Top Navigation & Actions */}
       <PathProvider />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -101,26 +42,26 @@ export default async function ProjectDetailPage({
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2 text-gray-500"
+              className="h-8 px-2 text-muted-foreground"
             >
               <Link href="/dashboard/projects">
                 <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects
               </Link>
             </Button>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             {projectData.title}
           </h1>
-          <p className="text-sm text-gray-500 mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {projectData.description}
           </p>
         </div>
 
         <div className="flex items-center gap-3">
-          <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 px-3 py-1 font-medium">
+          <Badge className="bg-primary/15 text-primary hover:bg-primary/15 px-3 py-1 font-medium">
             {projectData.status}
           </Badge>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium shadow-sm">
+          <Button className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium shadow-sm">
             <Plus className="w-4 h-4 mr-1.5" /> Add Task
           </Button>
         </div>
@@ -128,29 +69,29 @@ export default async function ProjectDetailPage({
 
       {/* Quick Metrics Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-gray-500">
+              <p className="text-xs font-medium text-muted-foreground">
                 Overall Progress
               </p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
+              <h3 className="text-2xl font-bold text-foreground mt-1">
                 {projectData.progress}%
               </h3>
             </div>
-            <div className="p-2.5 bg-blue-50 text-blue-600 rounded-lg">
+            <div className="p-2.5 bg-primary/10 text-primary rounded-lg">
               <Zap className="w-5 h-5" />
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-gray-500">
+              <p className="text-xs font-medium text-muted-foreground">
                 Tasks Completed
               </p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
+              <h3 className="text-2xl font-bold text-foreground mt-1">
                 {projectData.stats.completedTasks} /{" "}
                 {projectData.stats.totalTasks}
               </h3>
@@ -161,13 +102,13 @@ export default async function ProjectDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-gray-500">
+              <p className="text-xs font-medium text-muted-foreground">
                 Target Completion
               </p>
-              <h3 className="text-lg font-bold text-gray-900 mt-1">
+              <h3 className="text-lg font-bold text-foreground mt-1">
                 {projectData.dueDate}
               </h3>
             </div>
@@ -177,11 +118,11 @@ export default async function ProjectDetailPage({
           </CardContent>
         </Card>
 
-        <Card className="border-gray-100 shadow-sm">
+        <Card className="border-border shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-gray-500">Logged Hours</p>
-              <h3 className="text-2xl font-bold text-gray-900 mt-1">
+              <p className="text-xs font-medium text-muted-foreground">Logged Hours</p>
+              <h3 className="text-2xl font-bold text-foreground mt-1">
                 {projectData.stats.hoursLogged} hrs
               </h3>
             </div>
@@ -194,23 +135,25 @@ export default async function ProjectDetailPage({
 
       {/* Main Content Sections using Tabs */}
       <Tabs defaultValue="tasks" className="w-full space-y-4">
-        <TabsList className="bg-white border border-gray-200 p-1 rounded-lg">
-          <TabsTrigger value="tasks" className="flex items-center gap-2">
-            <ListTodo className="w-4 h-4" /> Tasks
-          </TabsTrigger>
-          <TabsTrigger value="team" className="flex items-center gap-2">
-            <Users className="w-4 h-4" /> Team Members
-          </TabsTrigger>
-          <TabsTrigger value="files" className="flex items-center gap-2">
-            <FileText className="w-4 h-4" /> Files & Docs
-          </TabsTrigger>
-        </TabsList>
+        <div className="overflow-x-auto -mx-1 px-1 pb-1">
+          <TabsList className="bg-card border border-border p-1 rounded-lg min-w-max">
+            <TabsTrigger value="tasks" className="flex items-center gap-2">
+              <ListTodo className="w-4 h-4" /> Tasks
+            </TabsTrigger>
+            <TabsTrigger value="team" className="flex items-center gap-2">
+              <Users className="w-4 h-4" /> Team Members
+            </TabsTrigger>
+            <TabsTrigger value="files" className="flex items-center gap-2">
+              <FileText className="w-4 h-4" /> Files & Docs
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Tasks Tab */}
         <TabsContent value="tasks" className="space-y-4">
-          <Card className="border-gray-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-base font-bold text-gray-900">
+              <CardTitle className="text-base font-bold text-foreground">
                 Project Tasks
               </CardTitle>
               <Button variant="outline" size="sm">
@@ -218,13 +161,13 @@ export default async function ProjectDetailPage({
               </Button>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-border">
                 {projectData.tasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-4 flex items-center justify-between hover:bg-gray-50/50"
+                    className="p-4 flex items-center justify-between gap-3 flex-wrap hover:bg-muted/50"
                   >
-                    <div className="flex items-center gap-3">
+        <div className="flex items-center flex-wrap gap-3">
                       <div
                         className={`w-2 h-2 rounded-full ${
                           task.status === "Completed"
@@ -233,10 +176,10 @@ export default async function ProjectDetailPage({
                         }`}
                       />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-foreground">
                           {task.title}
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-muted-foreground">
                           Assigned to: {task.assignee}
                         </p>
                       </div>
@@ -253,9 +196,9 @@ export default async function ProjectDetailPage({
 
         {/* Team Members Tab */}
         <TabsContent value="team">
-          <Card className="border-gray-100 shadow-sm">
+          <Card className="border-border shadow-sm">
             <CardHeader>
-              <CardTitle className="text-base font-bold text-gray-900">
+              <CardTitle className="text-base font-bold text-foreground">
                 Assigned Team
               </CardTitle>
             </CardHeader>
@@ -264,17 +207,17 @@ export default async function ProjectDetailPage({
                 {projectData.members.map((member, i) => (
                   <div
                     key={i}
-                    className="flex items-center gap-3 p-3 border border-gray-100 rounded-lg bg-white"
+                    className="flex items-center gap-3 p-3 border border-border rounded-lg bg-card"
                   >
                     <Avatar>
                       <AvatarImage src={member.avatar} />
                       <AvatarFallback>{member.fallback}</AvatarFallback>
                     </Avatar>
                     <div>
-                      <p className="text-sm font-semibold text-gray-900">
+                      <p className="text-sm font-semibold text-foreground">
                         {member.name}
                       </p>
-                      <p className="text-xs text-gray-500">{member.role}</p>
+                      <p className="text-xs text-muted-foreground">{member.role}</p>
                     </div>
                   </div>
                 ))}
@@ -285,9 +228,9 @@ export default async function ProjectDetailPage({
 
         {/* Files Tab Placeholder */}
         <TabsContent value="files">
-          <Card className="border-gray-100 shadow-sm">
-            <CardContent className="p-8 text-center text-gray-500">
-              <FileText className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+          <Card className="border-border shadow-sm">
+            <CardContent className="p-8 text-center text-muted-foreground">
+              <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
               <p className="text-sm font-medium">
                 No files uploaded yet for project ID: {id}
               </p>
