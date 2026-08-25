@@ -9,6 +9,10 @@ import {
   type Theme,
 } from "@/components/customsUi/ThemeProvider";
 
+// shadcn components
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+
 const themeOptions: {
   value: Theme;
   label: string;
@@ -96,86 +100,93 @@ export default function AppearanceSettingsPage() {
           </p>
         </div>
 
-        {/* Theme Selection Card */}
-        <section className="bg-card border border-border rounded-xl p-6 md:p-8 shadow-xs">
-          <div className="pb-4 border-b border-border">
-            <h2 className="text-base font-semibold text-foreground">
-              Theme
-            </h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Select a theme. Changes apply instantly and are saved to your
-              browser.
-            </p>
-          </div>
+        {/* Theme Selection Card – uses shadcn Card/CardContent */}
+        <Card className="shadow-xs">
+          <CardContent className="p-6 md:p-8">
+            {/* Card header / description */}
+            <div className="pb-4 border-b border-border">
+              <h2 className="text-base font-semibold text-foreground">
+                Theme
+              </h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Select a theme. Changes apply instantly and are saved to your
+                browser.
+              </p>
+            </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
-            {themeOptions.map((option) => {
-              const selected = theme === option.value;
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTheme(option.value)}
-                  aria-pressed={selected}
-                  className={`relative flex flex-col items-start gap-3 text-left p-4 rounded-xl border transition-all cursor-pointer ${
-                    selected
-                      ? "border-blue-500 ring-2 ring-ring/30 bg-primary/10/50"
-                      : "border-border hover:border-primary/40 hover:bg-muted"
-                  }`}
-                >
-                  {/* Check Indicator */}
-                  <span
-                    className={`absolute top-3 right-3 flex items-center justify-center w-5 h-5 rounded-full transition-all ${
+            {/* Theme tile grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+              {themeOptions.map((option) => {
+                const selected = theme === option.value;
+                return (
+                  /* Theme tile – uses shadcn Button (variant driven by selected state) */
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant={selected ? "default" : "outline"}
+                    size="default"
+                    onClick={() => setTheme(option.value)}
+                    aria-pressed={selected}
+                    className={`relative flex flex-col items-start gap-3 text-left p-4 rounded-xl h-auto ${
                       selected
-                        ? "bg-primary text-primary-foreground"
-                        : "border border-border text-transparent"
+                        ? "border-blue-500 ring-2 ring-ring/30 bg-primary/10/50 text-foreground"
+                        : "border-border hover:border-primary/40 hover:bg-muted"
                     }`}
                   >
-                    <Check className="w-3 h-3" strokeWidth={3} />
-                  </span>
+                    {/* Check Indicator */}
+                    <span
+                      className={`absolute top-3 right-3 flex items-center justify-center w-5 h-5 rounded-full transition-all ${
+                        selected
+                          ? "bg-primary text-primary-foreground"
+                          : "border border-border text-transparent"
+                      }`}
+                    >
+                      <Check className="w-3 h-3" strokeWidth={3} />
+                    </span>
 
-                  {/* Preview */}
-                  <div className="w-full h-20">
-                    <ThemePreview
-                      mode={
-                        option.value === "system"
-                          ? "system"
-                          : (option.value as ResolvedTheme)
-                      }
-                    />
-                  </div>
-
-                  {/* Label & Description */}
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      {option.value === "light" && (
-                        <Sun className="w-3.5 h-3.5 text-amber-500" />
-                      )}
-                      {option.value === "dark" && (
-                        <Moon className="w-3.5 h-3.5 text-indigo-400" />
-                      )}
-                      {option.value === "system" && (
-                        <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
-                      )}
-                      <h3 className="text-sm font-semibold text-foreground">
-                        {option.label}
-                      </h3>
+                    {/* Preview */}
+                    <div className="w-full h-20">
+                      <ThemePreview
+                        mode={
+                          option.value === "system"
+                            ? "system"
+                            : (option.value as ResolvedTheme)
+                        }
+                      />
                     </div>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
-                      {option.description}
-                    </p>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
 
-          {/* Current Status */}
-          <p className="pt-6 text-xs text-muted-foreground font-mono">
-            Current theme: {theme}
-            {theme === "system" && ` (resolves to ${resolvedTheme})`}
-          </p>
-        </section>
+                    {/* Label & Description */}
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        {option.value === "light" && (
+                          <Sun className="w-3.5 h-3.5 text-amber-500" />
+                        )}
+                        {option.value === "dark" && (
+                          <Moon className="w-3.5 h-3.5 text-indigo-400" />
+                        )}
+                        {option.value === "system" && (
+                          <Monitor className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
+                        <h3 className="text-sm font-semibold text-foreground">
+                          {option.label}
+                        </h3>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+                        {option.description}
+                      </p>
+                    </div>
+                  </Button>
+                );
+              })}
+            </div>
+
+            {/* Current Status */}
+            <p className="pt-6 text-xs text-muted-foreground font-mono">
+              Current theme: {theme}
+              {theme === "system" && ` (resolves to ${resolvedTheme})`}
+            </p>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

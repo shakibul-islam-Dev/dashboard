@@ -13,6 +13,13 @@ import {
   Send,
 } from "lucide-react";
 import { taskDetail } from "@/data/tasks";
+import { toast } from "sonner";
+
+// shadcn UI components
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
 
 interface TaskDetailModalProps {
   isOpen: boolean;
@@ -44,6 +51,15 @@ export default function TaskDetailModal({
 
   if (!isOpen) return null;
 
+  // ── Comment submission handler ───────────────────────────────────────────
+  const handleSendComment = () => {
+    if (!comment.trim()) return;
+    toast.success("Comment posted", {
+      description: `"${comment.trim()}"`,
+    });
+    setComment("");
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
       {/* Backdrop / Overlay */}
@@ -60,26 +76,27 @@ export default function TaskDetailModal({
             <span className="text-xs font-mono font-semibold bg-muted text-muted-foreground px-2 py-1 rounded">
               {taskDetail.code}
             </span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-primary/100"></span>
+            {/* Replaced: raw <span> badge → <Badge variant="outline"> */}
+            <Badge variant="outline" className="gap-1.5 px-2.5 py-1 text-xs font-medium bg-primary/10 text-primary border-primary/20">
+              <span className="w-1.5 h-1.5 rounded-full bg-primary/100" />
               {taskDetail.status}
-            </span>
+            </Badge>
           </div>
 
           <div className="flex items-center gap-3 text-muted-foreground">
-            <button className="hover:text-muted-foreground transition-colors p-1 rounded-md hover:bg-muted">
+            {/* Replaced: raw <button> edit → <Button variant="ghost" size="icon"> */}
+            <Button variant="ghost" size="icon" className="p-1">
               <Pencil className="w-4 h-4" />
-            </button>
-            <button className="hover:text-muted-foreground transition-colors p-1 rounded-md hover:bg-muted">
+            </Button>
+            {/* Replaced: raw <button> more options → <Button variant="ghost" size="icon"> */}
+            <Button variant="ghost" size="icon" className="p-1">
               <MoreHorizontal className="w-4 h-4" />
-            </button>
+            </Button>
             <div className="w-px h-4 bg-muted" />
-            <button
-              onClick={onClose}
-              className="hover:text-muted-foreground transition-colors p-1 rounded-md hover:bg-muted"
-            >
+            {/* Replaced: raw <button> close → <Button variant="ghost" size="icon"> */}
+            <Button variant="ghost" size="icon" onClick={onClose} className="p-1">
               <X className="w-4.5 h-4.5" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -103,9 +120,12 @@ export default function TaskDetailModal({
                 Assignee
               </span>
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-muted text-foreground font-semibold text-[10px] flex items-center justify-center">
-                  {taskDetail.assignee.initials}
-                </div>
+                {/* Replaced: raw avatar <div> → <Avatar> / <AvatarFallback> */}
+                <Avatar className="w-6 h-6">
+                  <AvatarFallback className="text-[10px] font-semibold bg-muted text-foreground">
+                    {taskDetail.assignee.initials}
+                  </AvatarFallback>
+                </Avatar>
                 <span className="text-sm font-medium text-foreground">
                   {taskDetail.assignee.name}
                 </span>
@@ -130,10 +150,11 @@ export default function TaskDetailModal({
               <span className="block text-[11px] font-mono font-bold tracking-wider text-muted-foreground uppercase mb-2">
                 Priority
               </span>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-100">
+              {/* Replaced: raw priority <span> badge → <Badge variant="destructive"> */}
+              <Badge variant="destructive" className="gap-1.5 px-2.5 py-0.5 text-xs font-semibold">
                 <AlertCircle className="w-3 h-3" />
                 {taskDetail.priority}
-              </span>
+              </Badge>
             </div>
 
             {/* Project */}
@@ -155,18 +176,21 @@ export default function TaskDetailModal({
                 Tags
               </span>
               <div className="flex flex-wrap items-center gap-2">
+                {/* Replaced: raw tag <span> pills → <Badge variant="outline"> */}
                 {taskDetail.tags.map((tag) => (
-                  <span
+                  <Badge
                     key={tag}
-                    className="bg-muted text-muted-foreground text-xs font-mono font-medium px-2.5 py-1 rounded"
+                    variant="outline"
+                    className="text-xs font-mono font-medium px-2.5 py-1 bg-muted text-muted-foreground"
                   >
                     {tag}
-                  </span>
+                  </Badge>
                 ))}
-                <button className="border border-dashed border-border text-muted-foreground hover:border-muted-foreground/50 text-xs font-mono px-2.5 py-1 rounded inline-flex items-center gap-1 transition-colors">
+                {/* Replaced: raw <button> add tag → <Button variant="ghost" size="sm"> */}
+                <Button variant="ghost" size="sm" className="gap-1 border border-dashed border-border text-xs font-mono px-2.5 py-1">
                   <Plus className="w-3 h-3" />
                   Add
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -190,9 +214,10 @@ export default function TaskDetailModal({
                   </p>
                 </div>
               </div>
-              <span className="text-[10px] font-bold font-mono tracking-wider bg-primary/10 text-primary px-2 py-1 rounded uppercase border border-primary/20">
+              {/* Replaced: raw dependency status <span> → <Badge variant="outline"> */}
+              <Badge variant="outline" className="text-[10px] font-bold font-mono tracking-wider uppercase bg-primary/10 text-primary border-primary/20">
                 {taskDetail.dependency.status}
-              </span>
+              </Badge>
             </div>
           </div>
 
@@ -214,11 +239,12 @@ export default function TaskDetailModal({
                   <div
                     className={`absolute -left-5.75 top-1.5 w-2 h-2 rounded-full ${item.dotColor} ring-4 ring-white`}
                   />
-                  <div
-                    className={`w-7 h-7 rounded-full ${item.avatarBg} font-semibold text-[10px] flex items-center justify-center shrink-0 mt-0.5`}
-                  >
-                    {item.actorInitials}
-                  </div>
+                  {/* Replaced: raw activity avatar <div> → <Avatar> / <AvatarFallback> */}
+                  <Avatar className={`w-7 h-7 shrink-0 mt-0.5 ${item.avatarBg}`}>
+                    <AvatarFallback className="font-semibold text-[10px]">
+                      {item.actorInitials}
+                    </AvatarFallback>
+                  </Avatar>
                   <div>
                     <p className="text-xs text-foreground">
                       <span className="font-semibold text-foreground">
@@ -250,19 +276,30 @@ export default function TaskDetailModal({
         {/* Bottom Comment Input */}
         <div className="p-4 px-6 border-t border-border bg-muted/50">
           <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-3 py-2 shadow-2xs">
-            <div className="w-6 h-6 rounded-full bg-muted text-foreground font-semibold text-[10px] flex items-center justify-center shrink-0">
-              {taskDetail.assignee.initials}
-            </div>
-            <input
+            {/* Replaced: raw comment avatar <div> → <Avatar> / <AvatarFallback> */}
+            <Avatar className="w-6 h-6 shrink-0">
+              <AvatarFallback className="text-[10px] font-semibold bg-muted text-foreground">
+                {taskDetail.assignee.initials}
+              </AvatarFallback>
+            </Avatar>
+            {/* Replaced: raw <input type="text"> → <Input> */}
+            <Input
               type="text"
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Add a comment..."
-              className="w-full bg-transparent border-0 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="flex-1 bg-transparent border-0 text-xs text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
             />
-            <button className="text-primary hover:text-primary p-1 transition-colors">
+            {/* Replaced: raw <button> send → <Button variant="ghost" size="icon"> */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-primary hover:text-primary p-1"
+              onClick={handleSendComment}
+              disabled={!comment.trim()}
+            >
               <Send className="w-3.5 h-3.5" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>

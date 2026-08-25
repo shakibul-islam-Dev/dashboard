@@ -7,12 +7,29 @@ import {
   Italic,
   List,
   Link2,
-  ChevronDown,
   UserPlus,
   Calendar,
   Search,
+  Loader2,
 } from "lucide-react";
 import { createTaskDefaults } from "@/data/tasks";
+import { toast } from "sonner";
+
+// shadcn UI Components
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+/* ── localStorage key for persisted tasks ── */
+const LS_TASKS_KEY = "dashboard_custom_tasks";
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -23,6 +40,7 @@ export default function CreateTaskModal({
   isOpen,
   onClose,
 }: CreateTaskModalProps) {
+  // ── Form State ─────────────────────────────────────────────────────────────
   const [taskTitle, setTaskTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState(createTaskDefaults.statuses[0]);
@@ -33,7 +51,11 @@ export default function CreateTaskModal({
   const [tagInput, setTagInput] = useState("");
   const [dependencySearch, setDependencySearch] = useState("");
 
-  // Close modal on Escape key press
+  // ── Validation & Submission State ───────────────────────────────────────────
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Escape Key Handler ─────────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -52,6 +74,59 @@ export default function CreateTaskModal({
 
   if (!isOpen) return null;
 
+  // ── Form Submission: validates, persists to localStorage, shows toast ───────
+  const handleSubmit = async () => {
+    if (!taskTitle.trim()) {
+      setError("Task title is required.");
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+
+    // Simulate a brief network delay for realistic UX
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    const newTask = {
+      id: `TSK-${Date.now()}`,
+      title: taskTitle.trim(),
+      description,
+      status,
+      priority,
+      assignee,
+      dueDate,
+      tags,
+      dependency: dependencySearch.trim() || null,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Persist to localStorage
+    try {
+      const existing = JSON.parse(localStorage.getItem(LS_TASKS_KEY) || "[]");
+      existing.push(newTask);
+      localStorage.setItem(LS_TASKS_KEY, JSON.stringify(existing));
+    } catch {
+      /* localStorage unavailable – ignore */
+    }
+
+    setIsSubmitting(false);
+    toast.success("Task created", {
+      description: `"${newTask.title}" has been added to your tasks.`,
+    });
+
+    // Reset form and close
+    setTaskTitle("");
+    setDescription("");
+    setStatus(createTaskDefaults.statuses[0]);
+    setPriority(createTaskDefaults.priorities[1]);
+    setDueDate("");
+    setTags([...createTaskDefaults.defaultTags]);
+    setTagInput("");
+    setDependencySearch("");
+    onClose();
+  };
+
+  // ── Tag Helpers ────────────────────────────────────────────────────────────
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((tag) => tag !== tagToRemove));
   };
@@ -79,12 +154,9 @@ export default function CreateTaskModal({
         {/* Header */}
         <div className="px-6 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-lg font-bold text-foreground">Create Task</h2>
-          <button
-            onClick={onClose}
-            className="text-muted-foreground hover:text-muted-foreground transition-colors p-1 rounded-md hover:bg-muted"
-          >
+          <Button variant="ghost" size="icon" onClick={onClose}>
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Modal Form Body */}
@@ -94,14 +166,19 @@ export default function CreateTaskModal({
             <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
               Task Title <span className="text-rose-500">*</span>
             </label>
-            <input
+            <Input
               type="text"
               value={taskTitle}
-              onChange={(e) => setTaskTitle(e.target.value)}
+              onChange={(e) => {
+                setTaskTitle(e.target.value);
+                if (error) setError("");
+              }}
               placeholder="E.g., Update user authentication flow"
-              className="w-full bg-card border border-primary rounded-lg px-3.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/20"
               autoFocus
             />
+            {error && (
+              <p className="text-xs text-rose-500 font-medium">{error}</p>
+            )}
           </div>
 
           {/* Description with Rich Text Toolbar Header */}
@@ -112,38 +189,27 @@ export default function CreateTaskModal({
             <div className="border border-border rounded-lg overflow-hidden bg-muted/50">
               {/* Simple Formatting Bar */}
               <div className="flex items-center gap-3 px-3 py-1.5 border-b border-border bg-muted text-muted-foreground">
-                <button
-                  type="button"
-                  className="hover:text-foreground p-0.5 rounded transition-colors"
-                >
+                <Button variant="ghost" size="icon" type="button" className="p-0.5 h-auto">
                   <Bold className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  className="hover:text-foreground p-0.5 rounded transition-colors"
-                >
+                </Button>
+                <Button variant="ghost" size="icon" type="button" className="p-0.5 h-auto">
                   <Italic className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  type="button"
-                  className="hover:text-foreground p-0.5 rounded transition-colors"
-                >
+                </Button>
+                <Button variant="ghost" size="icon" type="button" className="p-0.5 h-auto">
                   <List className="w-3.5 h-3.5" />
-                </button>
+                </Button>
                 <div className="w-px h-3.5 bg-muted" />
-                <button
-                  type="button"
-                  className="hover:text-foreground p-0.5 rounded transition-colors"
-                >
+                <Button variant="ghost" size="icon" type="button" className="p-0.5 h-auto">
                   <Link2 className="w-3.5 h-3.5" />
-                </button>
+                </Button>
               </div>
-              <textarea
+              {/* Description Textarea */}
+              <Textarea
                 rows={3}
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Add detailed context, acceptance criteria, or technical notes..."
-                className="w-full bg-card px-3.5 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none resize-none"
+                className="bg-card border-0 focus-visible:ring-0 resize-none rounded-none"
               />
             </div>
           </div>
@@ -155,20 +221,18 @@ export default function CreateTaskModal({
               <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Status
               </label>
-              <div className="relative">
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-card border border-border rounded-lg px-3.5 py-2 text-sm text-foreground appearance-none focus:outline-none focus:border-border pr-8"
-                >
+              <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
                   {createTaskDefaults.statuses.map((s) => (
-                    <option key={s} value={s}>
+                    <SelectItem key={s} value={s}>
                       {s}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Priority */}
@@ -176,20 +240,18 @@ export default function CreateTaskModal({
               <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Priority
               </label>
-              <div className="relative">
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full bg-card border border-border rounded-lg px-3.5 py-2 text-sm text-foreground appearance-none focus:outline-none focus:border-border pr-8"
-                >
+              <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
                   {createTaskDefaults.priorities.map((p) => (
-                    <option key={p} value={p}>
+                    <SelectItem key={p} value={p}>
                       {p}
-                    </option>
+                    </SelectItem>
                   ))}
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
@@ -218,14 +280,14 @@ export default function CreateTaskModal({
               <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Due Date
               </label>
-              <div className="relative flex items-center border border-border rounded-lg px-3 py-1.5 bg-card">
-                <Calendar className="w-4 h-4 text-muted-foreground mr-2 shrink-0" />
-                <input
+              <div className="relative flex items-center">
+                <Calendar className="w-4 h-4 text-muted-foreground absolute left-3 shrink-0 pointer-events-none" />
+                <Input
                   type="text"
                   placeholder="mm/dd/yyyy"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  className="pl-9 text-xs"
                 />
               </div>
             </div>
@@ -238,27 +300,26 @@ export default function CreateTaskModal({
             </label>
             <div className="border border-border rounded-lg p-2 bg-card flex flex-wrap items-center gap-2 min-h-10.5">
               {tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="inline-flex items-center gap-1.5 bg-muted text-foreground text-xs font-medium px-2.5 py-1 rounded-md border border-border/60"
-                >
-                  <span>{tag}</span>
-                  <button
+                <Badge key={tag} variant="outline" className="gap-1.5 font-medium">
+                  {tag}
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     type="button"
                     onClick={() => removeTag(tag)}
-                    className="text-muted-foreground hover:text-muted-foreground transition-colors"
+                    className="h-3 w-3 p-0 hover:bg-transparent"
                   >
                     <X className="w-3 h-3" />
-                  </button>
-                </span>
+                  </Button>
+                </Badge>
               ))}
-              <input
+              <Input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleAddTag}
                 placeholder="Add tag..."
-                className="bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none flex-1 min-w-20"
+                className="bg-transparent border-0 focus-visible:ring-0 flex-1 min-w-20 text-xs h-auto p-0 shadow-none"
               />
             </div>
           </div>
@@ -268,14 +329,14 @@ export default function CreateTaskModal({
             <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
               Blocks / Blocked By
             </label>
-            <div className="relative flex items-center border border-border rounded-lg px-3 py-2 bg-card">
-              <Search className="w-4 h-4 text-muted-foreground mr-2 shrink-0" />
-              <input
+            <div className="relative flex items-center">
+              <Search className="w-4 h-4 text-muted-foreground absolute left-3 shrink-0 pointer-events-none" />
+              <Input
                 type="text"
                 value={dependencySearch}
                 onChange={(e) => setDependencySearch(e.target.value)}
                 placeholder="Search tasks by ID or name (e.g., TSK-102)"
-                className="w-full bg-transparent text-xs text-foreground placeholder:text-muted-foreground focus:outline-none"
+                className="pl-9 text-xs"
               />
             </div>
           </div>
@@ -283,19 +344,19 @@ export default function CreateTaskModal({
 
         {/* Modal Footer Actions */}
         <div className="px-6 py-4 bg-muted/50 border-t border-border flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-          >
+          <Button variant="ghost" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 text-xs font-medium bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg shadow-xs transition-colors"
-          >
-            Create Task
-          </button>
+          </Button>
+          <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Creating...
+              </>
+            ) : (
+              "Create Task"
+            )}
+          </Button>
         </div>
       </div>
     </div>

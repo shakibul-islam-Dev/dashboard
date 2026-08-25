@@ -12,6 +12,9 @@ import {
   dropdownNotifications as initialData,
   type DropdownNotification,
 } from "@/data/notifications";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useRouter } from "next/navigation";
 
 interface NotificationsModalProps {
   isOpen: boolean;
@@ -23,10 +26,10 @@ export default function NotificationsModal({
   onClose,
 }: NotificationsModalProps) {
   const modalRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
-  const [notifications, setNotifications] = useState<DropdownNotification[]>(
-    initialData,
-  );
+  const [notifications, setNotifications] =
+    useState<DropdownNotification[]>(initialData);
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -49,8 +52,17 @@ export default function NotificationsModal({
 
   if (!isOpen) return null;
 
+  // Mark all notifications as read
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
+  };
+
+  // Mark a single notification as read and close modal
+  const handleNotificationClick = (id: string) => {
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, unread: false } : n)),
+    );
+    onClose();
   };
 
   const todayNotifications = notifications.filter((n) => n.section === "TODAY");
@@ -71,12 +83,10 @@ export default function NotificationsModal({
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-base font-bold text-foreground">Notifications</h2>
-          <button
-            onClick={markAllAsRead}
-            className="text-xs font-semibold text-primary hover:text-primary transition-colors"
-          >
+          {/* Mark all notifications as read */}
+          <Button variant="ghost" size="sm" onClick={markAllAsRead}>
             Mark all as read
-          </button>
+          </Button>
         </div>
 
         {/* Scrollable Content */}
@@ -91,7 +101,8 @@ export default function NotificationsModal({
                 {todayNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`relative flex items-start gap-3 px-5 py-3.5 transition-colors ${
+                    onClick={() => handleNotificationClick(notification.id)}
+                    className={`relative flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors ${
                       notification.unread
                         ? "bg-primary/20"
                         : "hover:bg-muted/50"
@@ -107,11 +118,16 @@ export default function NotificationsModal({
 
                     {/* Avatar with Status Icon Badge */}
                     <div className="relative shrink-0 ml-2">
-                      <img
-                        src={notification.avatar}
-                        alt={notification.actor}
-                        className="w-9 h-9 rounded-full object-cover border border-border"
-                      />
+                      {notification.avatar ? (
+                        <Avatar className="w-9 h-9">
+                          <AvatarImage src={notification.avatar} alt={notification.actor ?? ""} />
+                          <AvatarFallback>{notification.actor?.charAt(0) ?? "?"}</AvatarFallback>
+                        </Avatar>
+                      ) : (
+                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground border border-border">
+                          {notification.actor?.charAt(0) ?? "?"}
+                        </div>
+                      )}
                       {notification.type === "completed" && (
                         <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white ring-2 ring-card">
                           <CheckCircle2 className="w-3 h-3" />
@@ -157,7 +173,8 @@ export default function NotificationsModal({
                 {earlierNotifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className="flex items-start gap-3.5 px-5 py-3.5 hover:bg-muted/50 transition-colors"
+                    onClick={() => handleNotificationClick(notification.id)}
+                    className="flex items-start gap-3.5 px-5 py-3.5 hover:bg-muted/50 cursor-pointer transition-colors"
                   >
                     {/* Icon Category Badges */}
                     <div className="shrink-0">
@@ -196,12 +213,17 @@ export default function NotificationsModal({
 
         {/* Footer Action */}
         <div className="p-3 border-t border-border text-center bg-muted/30">
-          <button
-            type="button"
-            className="text-xs font-semibold text-primary hover:text-primary transition-colors w-full py-1 rounded-md hover:bg-primary/10"
+          {/* Navigate to full notifications page */}
+          <Button
+            variant="ghost"
+            className="w-full"
+            onClick={() => {
+              onClose();
+              router.push("/dashboard/notifications");
+            }}
           >
             View All Notifications
-          </button>
+          </Button>
         </div>
       </div>
     </div>

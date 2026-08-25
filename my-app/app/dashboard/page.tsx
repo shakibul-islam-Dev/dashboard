@@ -1,21 +1,49 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { Zap, Calendar } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import PathProvider from "@/components/customsUi/PathProvider";
 import Link from "next/link";
 import { dashboardProjects } from "@/data/projects";
 import { dashboardStats } from "@/data/analytics";
 import { recentActivityData } from "@/data/activity";
+import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import LoadingSkeletonDashboard from "@/components/customsUi/LoadingSkeletonDashboard";
+import DashboardErrorCard from "@/components/customsUi/DashboardErrorCard";
+import { motion } from "motion/react";
 
 export default function DashboardHome() {
+  // ── Loading state ──
+  const [loading, setLoading] = useState(true);
+  // ── Error state ──
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (loading) return <LoadingSkeletonDashboard />;
+  if (error) {
+    return (
+      <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 w-full max-w-7xl mx-auto">
+        <RouterNavigation />
+        <PathProvider />
+        <DashboardErrorCard onRetry={() => setError(false)} />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 w-full max-w-7xl mx-auto">
       {/* Top Header Section */}
+      <RouterNavigation />
       <PathProvider />
       <Card className="border-border shadow-sm">
         <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6">
@@ -28,10 +56,19 @@ export default function DashboardHome() {
             </p>
           </div>
           <Link href={`/dashboard/projects`}>
-            <Button className="bg-primary hover:bg-primary-hover text-primary-foreground cursor-pointer w-full sm:w-fit shadow-sm">
-              <Zap className="w-4 h-4 mr-2" />
-              Quick Add
-            </Button>
+            <motion.div
+              initial={{
+                y: 10,
+              }}
+              animate={{ y: 0 }}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground cursor-pointer w-full sm:w-fit shadow-sm">
+                <Zap className="w-4 h-4 mr-2" />
+                Quick Add
+              </Button>
+            </motion.div>
           </Link>
         </CardContent>
       </Card>
@@ -46,7 +83,7 @@ export default function DashboardHome() {
                   {stat.label}
                 </span>
                 <div className={`p-2 rounded-lg ${stat.iconBg}`}>
-                  <stat.icon className="w-4 h-4" />
+                  <stat.icon className="w-4 h-4 " />
                 </div>
               </div>
               <div className="mt-3 sm:mt-4 flex items-baseline gap-2">
@@ -58,15 +95,12 @@ export default function DashboardHome() {
                   {stat.value}
                 </span>
                 {stat.badge && (
-                  <span
-                    className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
-                      stat.isNegative
-                        ? "text-rose-600 bg-rose-50"
-                        : "text-emerald-600 bg-emerald-50"
-                    }`}
+                  <Badge
+                    variant={stat.isNegative ? "destructive" : "secondary"}
+                    className="text-xs font-semibold"
                   >
                     {stat.badge}
-                  </span>
+                  </Badge>
                 )}
                 {stat.note && (
                   <span className="text-[11px] sm:text-xs text-muted-foreground font-normal">
@@ -90,7 +124,6 @@ export default function DashboardHome() {
             <Button
               variant="link"
               className="text-primary p-0 h-auto font-medium text-sm"
-              // asChild
             >
               <Link href="/dashboard/projects">View All</Link>
             </Button>
@@ -102,8 +135,10 @@ export default function DashboardHome() {
                 key={proj.id}
                 className={`border-border cursor-pointer shadow-sm border-l-4 ${proj.borderColor} hover:shadow-md transition-shadow`}
               >
-                {/* Dynamic Link Route */}
-                <Link href={`/dashboard/projects`} className="block h-full">
+                <Link
+                  href={`/dashboard/projects/${proj.id}`}
+                  className="block h-full"
+                >
                   <CardContent className="p-4 sm:p-5 flex flex-col justify-between h-full gap-4">
                     <div>
                       <div className="flex items-center justify-between">
@@ -135,12 +170,14 @@ export default function DashboardHome() {
                     <div className="flex items-center justify-between pt-3 border-t border-gray-50 text-xs text-muted-foreground">
                       <div className="flex -space-x-1.5 overflow-hidden">
                         {proj.avatars.map((av, i) => (
-                          <div
+                          <Avatar
                             key={i}
-                            className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-muted text-foreground text-[10px] font-semibold border-2 border-white"
+                            className="w-6 h-6 border-2 border-white"
                           >
-                            {av}
-                          </div>
+                            <AvatarFallback className="text-[10px] font-semibold bg-muted text-foreground">
+                              {av}
+                            </AvatarFallback>
+                          </Avatar>
                         ))}
                       </div>
                       <div className="flex items-center gap-1">
@@ -180,9 +217,12 @@ export default function DashboardHome() {
                             {item.target}
                           </code>
                         ) : (
-                          <span className="font-semibold text-primary cursor-pointer">
+                          <Link
+                            href="/dashboard/activity"
+                            className="font-semibold text-primary cursor-pointer hover:underline"
+                          >
                             {item.target}
-                          </span>
+                          </Link>
                         ))}
                     </p>
                     {item.comment && (
@@ -198,12 +238,14 @@ export default function DashboardHome() {
               </div>
             </div>
 
-            <Button
-              variant="outline"
-              className="w-full mt-6 text-primary border-dashed border-primary/30 hover:bg-primary/10 cursor-pointer text-sm"
-            >
-              View All Activity
-            </Button>
+            <Link href="/dashboard/activity">
+              <Button
+                variant="outline"
+                className="w-full mt-6 text-primary border-dashed border-primary/30 hover:bg-primary/10 cursor-pointer text-sm"
+              >
+                View All Activity
+              </Button>
+            </Link>
           </CardContent>
         </Card>
       </div>

@@ -13,10 +13,10 @@ import {
   Plus,
   Users,
   Zap,
-  ArrowLeft,
 } from "lucide-react";
-import Link from "next/link";
+// import Link from "next/link";
 import { getProjectDetails } from "@/data/projects";
+import RouterNavigation from "@/components/customsUi/RouterNavigation";
 
 interface ProjectDetailsProps {
   params: Promise<{
@@ -35,10 +35,11 @@ export default async function ProjectDetailPage({
   return (
     <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 bg-transparent min-h-screen">
       {/* Top Navigation & Actions */}
+      <RouterNavigation />
       <PathProvider />
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          {/* <div className="flex items-center gap-2 mb-2">
             <Button
               variant="ghost"
               size="sm"
@@ -48,7 +49,7 @@ export default async function ProjectDetailPage({
                 <ArrowLeft className="w-4 h-4 mr-1" /> Back to Projects
               </Link>
             </Button>
-          </div>
+          </div> */}
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
             {projectData.title}
           </h1>
@@ -121,7 +122,9 @@ export default async function ProjectDetailPage({
         <Card className="border-border shadow-sm">
           <CardContent className="p-5 flex items-center justify-between">
             <div>
-              <p className="text-xs font-medium text-muted-foreground">Logged Hours</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Logged Hours
+              </p>
               <h3 className="text-2xl font-bold text-foreground mt-1">
                 {projectData.stats.hoursLogged} hrs
               </h3>
@@ -156,9 +159,9 @@ export default async function ProjectDetailPage({
               <CardTitle className="text-base font-bold text-foreground">
                 Project Tasks
               </CardTitle>
-              <Button variant="outline" size="sm">
+              {/* <Button variant="outline" size="sm">
                 Filter
-              </Button>
+              </Button> */}
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border">
@@ -167,7 +170,7 @@ export default async function ProjectDetailPage({
                     key={task.id}
                     className="p-4 flex items-center justify-between gap-3 flex-wrap hover:bg-muted/50"
                   >
-        <div className="flex items-center flex-wrap gap-3">
+                    <div className="flex items-center flex-wrap gap-3">
                       <div
                         className={`w-2 h-2 rounded-full ${
                           task.status === "Completed"
@@ -217,7 +220,9 @@ export default async function ProjectDetailPage({
                       <p className="text-sm font-semibold text-foreground">
                         {member.name}
                       </p>
-                      <p className="text-xs text-muted-foreground">{member.role}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {member.role}
+                      </p>
                     </div>
                   </div>
                 ))}

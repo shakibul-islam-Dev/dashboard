@@ -2,6 +2,8 @@
 
 import React, { useEffect } from "react";
 import { AlertTriangle, ShieldAlert, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { dependencyIncompleteInfo } from "@/data/tasks";
 
 interface DependencyModalProps {
@@ -55,12 +57,16 @@ export default function DependencyIncompleteModal({
               Dependency Incomplete
             </h2>
           </div>
-          <button
+
+          {/* Close Button - shadcn Button with ghost variant and icon size */}
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onClose}
-            className="text-muted-foreground hover:text-muted-foreground transition-colors p-1 rounded-md hover:bg-muted"
+            className="text-muted-foreground hover:text-muted-foreground p-1 h-auto"
           >
             <X className="w-5 h-5" />
-          </button>
+          </Button>
         </div>
 
         {/* Modal Body */}
@@ -75,11 +81,12 @@ export default function DependencyIncompleteModal({
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                 Prerequisite Task
               </span>
-              {/* Status Badge */}
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium bg-primary/10 text-primary border border-primary/30/60">
+
+              {/* Status Badge - shadcn Badge with outline variant */}
+              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30/60 text-[10px] font-medium gap-1.5 px-2 py-0.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary/100" />
                 {dependencyIncompleteInfo.prerequisiteTask.status}
-              </span>
+              </Badge>
             </div>
 
             <div className="flex items-center gap-2 pt-0.5">
@@ -103,21 +110,27 @@ export default function DependencyIncompleteModal({
 
         {/* Footer Actions */}
         <div className="px-6 py-4 mt-6 bg-muted/50 border-t border-border flex items-center justify-end gap-3">
-          <button
+
+          {/* Cancel Button - shadcn Button with ghost variant */}
+          <Button
+            variant="ghost"
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="text-xs font-medium text-muted-foreground hover:text-foreground px-4 py-2 h-auto"
           >
             Cancel
-          </button>
-          <button
+          </Button>
+
+          {/* Move Anyway Button - shadcn Button with destructive variant */}
+          <Button
+            variant="destructive"
             type="button"
             onClick={onConfirm}
-            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium bg-amber-500 hover:bg-amber-600 text-white rounded-lg shadow-xs transition-colors"
+            className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-medium rounded-lg shadow-xs"
           >
             <ShieldAlert className="w-3.5 h-3.5" />
             Move Anyway
-          </button>
+          </Button>
         </div>
       </div>
     </div>

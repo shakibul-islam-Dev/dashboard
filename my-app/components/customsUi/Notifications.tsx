@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import {
   Square,
   CheckSquare,
@@ -16,10 +16,15 @@ import {
   Search,
   MoreVertical,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   mailNotifications as initialNotifications,
   type MailNotification,
 } from "@/data/notifications";
+import { toast } from "sonner";
+
+const ITEMS_PER_PAGE = 8;
 
 export default function Notifications() {
   const [notifications, setNotifications] =
@@ -29,22 +34,44 @@ export default function Notifications() {
   );
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  // --- Search Filtering ---
+  const [searchQuery, setSearchQuery] = useState("");
+  // --- Pagination ---
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Tab Filtering
-  const filteredNotifications = notifications.filter(
-    (n) => n.category === activeTab,
+  // Tab + Search Filtering
+  const filteredNotifications = useMemo(() => {
+    const tabFiltered = notifications.filter((n) => n.category === activeTab);
+    if (!searchQuery.trim()) return tabFiltered;
+    const q = searchQuery.toLowerCase();
+    return tabFiltered.filter(
+      (n) =>
+        n.sender.toLowerCase().includes(q) ||
+        n.subject.toLowerCase().includes(q) ||
+        n.snippet.toLowerCase().includes(q),
+    );
+  }, [notifications, activeTab, searchQuery]);
+
+  // Reset to page 1 when filters change
+  const totalPages = Math.max(1, Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE));
+  const safePage = Math.min(currentPage, totalPages);
+  const paginatedNotifications = filteredNotifications.slice(
+    (safePage - 1) * ITEMS_PER_PAGE,
+    safePage * ITEMS_PER_PAGE,
   );
+  const pageStart = filteredNotifications.length === 0 ? 0 : (safePage - 1) * ITEMS_PER_PAGE + 1;
+  const pageEnd = Math.min(safePage * ITEMS_PER_PAGE, filteredNotifications.length);
 
   // Selection Logic
   const allSelected =
-    filteredNotifications.length > 0 &&
-    filteredNotifications.every((n) => selectedIds.includes(n.id));
+    paginatedNotifications.length > 0 &&
+    paginatedNotifications.every((n) => selectedIds.includes(n.id));
 
   const toggleSelectAll = () => {
     if (allSelected) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(filteredNotifications.map((n) => n.id));
+      setSelectedIds(paginatedNotifications.map((n) => n.id));
     }
   };
 
@@ -76,6 +103,26 @@ export default function Notifications() {
     setSelectedIds([]);
   };
 
+  // --- Single delete: removes just one notification by id ---
+  const deleteSingle = (id: string) => {
+    setNotifications((prev) => prev.filter((n) => n.id !== id));
+  };
+
+  // --- Reply / Forward placeholder handlers (show toast) ---
+  const handleReply = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast.info("Reply", {
+      description: "Reply functionality coming soon.",
+    });
+  };
+
+  const handleForward = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    toast.info("Forward", {
+      description: "Forward functionality coming soon.",
+    });
+  };
+
   // Row Click
   const handleRowClick = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -90,58 +137,53 @@ export default function Notifications() {
       <div className="px-6 py-3 border-b border-border flex items-center justify-between gap-4 bg-muted/50">
         <div className="flex-1 max-w-2xl relative flex items-center">
           <Search className="w-4 h-4 text-muted-foreground absolute left-3.5" />
-          <input
+          {/* Search input for filtering notifications */}
+          <Input
             type="text"
             placeholder="Search mail and notifications..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full pl-10 pr-4 py-2 bg-muted hover:bg-muted focus:bg-card border border-transparent focus:border-border rounded-lg text-xs text-foreground placeholder:text-muted-foreground focus:outline-none transition-all"
           />
         </div>
         <div className="flex items-center gap-1 text-muted-foreground">
-          <button className="p-1.5 hover:bg-muted/60 rounded-full transition-colors text-muted-foreground">
+          {/* More options menu button */}
+          <Button variant="ghost" size="icon">
             <MoreVertical className="w-4 h-4" />
-          </button>
+          </Button>
         </div>
       </div>
 
       {/* Action Toolbar */}
       <div className="px-4 py-2 border-b border-border flex items-center justify-between text-muted-foreground bg-card">
         <div className="flex items-center gap-2">
-          {/* Select All Checkbox */}
-          <button
-            onClick={toggleSelectAll}
-            className="p-1.5 hover:bg-muted rounded text-muted-foreground hover:text-foreground"
-          >
+          {/* Select all / deselect all toggle */}
+          <Button variant="ghost" size="icon" onClick={toggleSelectAll}>
             {allSelected ? (
               <CheckSquare className="w-4 h-4 text-primary" />
             ) : (
               <Square className="w-4 h-4" />
             )}
-          </button>
+          </Button>
 
           {/* Bulk Actions (Only visible when items are selected) */}
           {selectedIds.length > 0 ? (
             <div className="flex items-center gap-1 pl-2 border-l border-border animate-in fade-in duration-150">
-              <button
-                onClick={() => markSelectedAsRead(true)}
-                title="Mark as read"
-                className="p-1.5 hover:bg-muted rounded text-muted-foreground"
-              >
+              {/* Bulk action: mark selected as read */}
+              <Button variant="ghost" size="icon" onClick={() => markSelectedAsRead(true)} title="Mark as read">
                 <MailOpen className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => markSelectedAsRead(false)}
-                title="Mark as unread"
-                className="p-1.5 hover:bg-muted rounded text-muted-foreground"
-              >
+              </Button>
+              {/* Bulk action: mark selected as unread */}
+              <Button variant="ghost" size="icon" onClick={() => markSelectedAsRead(false)} title="Mark as unread">
                 <Mail className="w-4 h-4" />
-              </button>
-              <button
-                onClick={deleteSelected}
-                title="Delete"
-                className="p-1.5 hover:bg-muted rounded text-rose-600"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
+              </Button>
+              {/* Bulk action: delete selected */}
+              <Button variant="ghost" size="icon" onClick={deleteSelected} title="Delete">
+                <Trash2 className="w-4 h-4 text-rose-600" />
+              </Button>
             </div>
           ) : null}
         </div>
@@ -149,66 +191,72 @@ export default function Notifications() {
         {/* Pagination Controls */}
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <span>
-            1–{filteredNotifications.length} of {filteredNotifications.length}
+            {pageStart}–{pageEnd} of {filteredNotifications.length}
           </span>
           <div className="flex items-center gap-1">
-            <button className="p-1 hover:bg-muted rounded disabled:opacity-30">
+            {/* Pagination: previous page */}
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={safePage <= 1}
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            >
               <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button className="p-1 hover:bg-muted rounded disabled:opacity-30">
+            </Button>
+            {/* Pagination: next page */}
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={safePage >= totalPages}
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            >
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       {/* Gmail-Style Category Tabs */}
       <div className="flex border-b border-border bg-card">
-        <button
-          onClick={() => setActiveTab("primary")}
-          className={`flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 transition-colors ${
-            activeTab === "primary"
-              ? "border-primary text-primary bg-primary/20"
-              : "border-transparent text-muted-foreground hover:bg-muted"
-          }`}
+        {/* Category tab: Primary */}
+        <Button
+          variant={activeTab === "primary" ? "default" : "ghost"}
+          onClick={() => { setActiveTab("primary"); setCurrentPage(1); }}
+          className="flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 rounded-none transition-colors"
         >
           <Inbox className="w-4 h-4" />
           <span>Primary</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={() => setActiveTab("updates")}
-          className={`flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 transition-colors ${
-            activeTab === "updates"
-              ? "border-primary text-primary bg-primary/20"
-              : "border-transparent text-muted-foreground hover:bg-muted"
-          }`}
+        {/* Category tab: Updates */}
+        <Button
+          variant={activeTab === "updates" ? "default" : "ghost"}
+          onClick={() => { setActiveTab("updates"); setCurrentPage(1); }}
+          className="flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 rounded-none transition-colors"
         >
           <AlertCircle className="w-4 h-4" />
           <span>Updates</span>
-        </button>
+        </Button>
 
-        <button
-          onClick={() => setActiveTab("social")}
-          className={`flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 transition-colors ${
-            activeTab === "social"
-              ? "border-primary text-primary bg-primary/20"
-              : "border-transparent text-muted-foreground hover:bg-muted"
-          }`}
+        {/* Category tab: Social */}
+        <Button
+          variant={activeTab === "social" ? "default" : "ghost"}
+          onClick={() => { setActiveTab("social"); setCurrentPage(1); }}
+          className="flex-1 flex items-center gap-3 px-6 py-3 text-xs font-semibold border-b-2 rounded-none transition-colors"
         >
           <Users className="w-4 h-4" />
           <span>Social</span>
-        </button>
+        </Button>
       </div>
 
       {/* Notifications List */}
       <div className="divide-y divide-border">
-        {filteredNotifications.length === 0 ? (
+        {paginatedNotifications.length === 0 ? (
           <div className="py-12 text-center text-xs text-muted-foreground">
             No notifications in this category.
           </div>
         ) : (
-          filteredNotifications.map((item) => {
+          paginatedNotifications.map((item) => {
             const isSelected = selectedIds.includes(item.id);
             const isExpanded = expandedId === item.id;
 
@@ -226,29 +274,23 @@ export default function Notifications() {
               >
                 {/* Compact Row Header */}
                 <div className="flex items-center gap-3 px-4 py-3">
-                  {/* Row Checkbox */}
-                  <button
-                    onClick={(e) => toggleSelectOne(item.id, e)}
-                    className="text-muted-foreground hover:text-muted-foreground"
-                  >
+                  {/* Row checkbox for individual selection */}
+                  <Button variant="ghost" size="icon" onClick={(e) => toggleSelectOne(item.id, e)}>
                     {isSelected ? (
                       <CheckSquare className="w-4 h-4 text-primary" />
                     ) : (
                       <Square className="w-4 h-4" />
                     )}
-                  </button>
+                  </Button>
 
-                  {/* Star */}
-                  <button
-                    onClick={(e) => toggleStar(item.id, e)}
-                    className="text-muted-foreground/70 hover:text-destructive"
-                  >
+                  {/* Star/unstar toggle for this notification */}
+                  <Button variant="ghost" size="icon" onClick={(e) => toggleStar(item.id, e)}>
                     <Star
                       className={`w-4 h-4 ${
                         item.isStarred ? "text-amber-400 fill-amber-400" : ""
                       }`}
                     />
-                  </button>
+                  </Button>
 
                   {/* Sender Name */}
                   <div className="w-24 sm:w-32 shrink-0 truncate text-xs text-foreground">
@@ -272,16 +314,21 @@ export default function Notifications() {
 
                   {/* Hover Quick Action Icons */}
                   <div className="hidden group-hover:flex items-center gap-1 shrink-0 text-muted-foreground">
-                    <button
+                    {/* Row action: delete single notification */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteSelected();
+                        deleteSingle(item.id);
                       }}
-                      className="p-1 hover:text-rose-600 hover:bg-muted/50 rounded"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
+                      <Trash2 className="w-3.5 h-3.5 text-rose-600" />
+                    </Button>
+                    {/* Row action: toggle read/unread */}
+                    <Button
+                      variant="ghost"
+                      size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
                         setNotifications((prev) =>
@@ -290,14 +337,13 @@ export default function Notifications() {
                           ),
                         );
                       }}
-                      className="p-1 hover:text-foreground hover:bg-muted/50 rounded"
                     >
                       {item.isRead ? (
                         <Mail className="w-3.5 h-3.5" />
                       ) : (
                         <MailOpen className="w-3.5 h-3.5" />
                       )}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -306,12 +352,14 @@ export default function Notifications() {
                   <div className="px-6 sm:px-12 pb-4 pt-1 text-xs text-muted-foreground border-t border-border bg-muted/50">
                     <p className="leading-relaxed">{item.snippet}</p>
                     <div className="mt-3 flex items-center gap-2">
-                      <button className="px-3 py-1 bg-card border border-border rounded text-foreground hover:bg-muted font-medium text-[11px]">
+                      {/* Reply to this notification */}
+                      <Button variant="outline" size="sm" onClick={handleReply}>
                         Reply
-                      </button>
-                      <button className="px-3 py-1 bg-card border border-border rounded text-foreground hover:bg-muted font-medium text-[11px]">
+                      </Button>
+                      {/* Forward this notification */}
+                      <Button variant="outline" size="sm" onClick={handleForward}>
                         Forward
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}

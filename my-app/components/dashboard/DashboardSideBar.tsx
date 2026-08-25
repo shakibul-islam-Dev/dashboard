@@ -7,13 +7,15 @@ import {
   UserRound,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   dashboardSidebarLinks as sidebarLinks,
   currentUser,
 } from "@/data/navigation";
+// Button component from shadcn/ui (base-ui)
+import { Button } from "@/components/ui/button";
 
 interface DashboardSideBarProps {
   mobileOpen: boolean;
@@ -24,12 +26,25 @@ export default function DashboardSideBar({
   mobileOpen,
   onMobileClose,
 }: DashboardSideBarProps) {
-  const [isOpen, setIsOpen] = useState<boolean>(true);
+  // --- Persist collapsed state to localStorage ---
+  const [isOpen, setIsOpen] = useState<boolean>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("sidebar-collapsed") !== "true";
+    }
+    return true;
+  });
 
   const pathname = usePathname();
 
+  // Save collapsed state to localStorage on toggle
   const toggleSidebar = () => {
-    setIsOpen(!isOpen);
+    setIsOpen((prev) => {
+      const next = !prev;
+      if (typeof window !== "undefined") {
+        localStorage.setItem("sidebar-collapsed", String(!next));
+      }
+      return next;
+    });
   };
 
   const isActiveRoute = (link: string) => {
@@ -74,12 +89,12 @@ export default function DashboardSideBar({
             </h1>
           </div>
 
-          {/* Desktop Collapse Toggle */}
-          <button
+          {/* Desktop Collapse Toggle — ghost icon button for sidebar collapse */}
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={toggleSidebar}
-            className={`hidden lg:block p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors ${
-              isOpen ? "" : "mx-auto"
-            }`}
+            className={`hidden lg:block ${isOpen ? "" : "mx-auto"}`}
             title="Toggle Sidebar"
           >
             {isOpen ? (
@@ -87,16 +102,18 @@ export default function DashboardSideBar({
             ) : (
               <PanelRightClose size={20} />
             )}
-          </button>
+          </Button>
 
-          {/* Mobile Close Button */}
-          <button
+          {/* Mobile Close Button — ghost icon button to dismiss the mobile sidebar */}
+          <Button
+            variant="ghost"
+            size="icon"
             onClick={onMobileClose}
-            className="lg:hidden p-2 rounded-lg hover:bg-muted text-muted-foreground transition-colors ml-auto"
+            className="lg:hidden ml-auto"
             title="Close Sidebar"
           >
             <X size={20} />
-          </button>
+          </Button>
         </div>
 
         {/* Main Navigation Links */}
@@ -152,8 +169,9 @@ export default function DashboardSideBar({
             </Link>
           </div>
 
-          {/* User Profile */}
-          <div
+          {/* User Profile — links to settings */}
+          <Link
+            href="/dashboard/settings"
             className={`flex items-center gap-3 p-2 mt-2 rounded-lg transition-colors cursor-pointer ${
               isOpen || mobileOpen
                 ? "hover:bg-muted"
@@ -175,7 +193,7 @@ export default function DashboardSideBar({
                 {currentUser.role}
               </p>
             </div>
-          </div>
+          </Link>
         </div>
       </aside>
     </>

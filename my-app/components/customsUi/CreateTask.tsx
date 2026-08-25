@@ -10,7 +10,6 @@ import {
   Calendar,
   UserPlus,
   Search,
-  ChevronDown,
   Bell,
   HelpCircle,
   FolderKanban,
@@ -18,6 +17,18 @@ import {
 } from "lucide-react";
 import { createTaskDefaults } from "@/data/tasks";
 import { workspaceInfo } from "@/data/notifications";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 
 interface CreateTaskModalProps {
   isOpen?: boolean;
@@ -93,9 +104,10 @@ export default function CreateTaskModal({
                 </p>
               </div>
             </div>
-            <button className="w-full py-2 bg-primary/80 text-primary-foreground rounded-lg text-xs font-medium flex items-center justify-center gap-2">
+            {/* REPLACEMENT 1: raw <button> "New Project" → Button component */}
+            <Button className="w-full" size="lg">
               <Plus className="w-4 h-4" /> New Project
-            </button>
+            </Button>
             <div className="mt-6 space-y-2">
               <div className="p-2 bg-background/10 rounded-lg text-xs flex items-center gap-2">
                 <FolderKanban className="w-4 h-4 text-background/70" /> Projects
@@ -134,13 +146,10 @@ export default function CreateTaskModal({
           {/* Modal Header */}
           <div className="px-6 py-4 border-b border-border flex items-center justify-between bg-card">
             <h2 className="text-base font-bold text-foreground">Create Task</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="p-1 text-muted-foreground hover:text-foreground rounded-lg transition-colors cursor-pointer"
-            >
+            {/* REPLACEMENT 2: raw <button> close modal → Button variant="ghost" size="icon" */}
+            <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
 
           {/* Form Body */}
@@ -150,13 +159,14 @@ export default function CreateTaskModal({
               <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                 Task Title <span className="text-rose-500">*</span>
               </label>
-              <input
+              {/* REPLACEMENT 3: raw <input type="text"> title → Input component */}
+              <Input
                 type="text"
                 required
                 placeholder="E.g., Update user authentication flow"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-card border border-primary rounded-lg text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden ring-2 ring-ring/20"
+                className="w-full border-primary text-xs font-semibold"
               />
             </div>
 
@@ -168,25 +178,27 @@ export default function CreateTaskModal({
               <div className="border border-border rounded-lg overflow-hidden bg-card focus-within:border-primary transition-colors">
                 {/* Editor Formatting Bar */}
                 <div className="flex items-center gap-3 px-3 py-1.5 border-b border-border bg-muted/50 text-muted-foreground">
-                  <button type="button" className="hover:text-foreground">
+                  {/* REPLACEMENT 4: raw <button> formatting toolbar buttons → Button variant="ghost" size="icon-xs" */}
+                  <Button type="button" variant="ghost" size="icon-xs">
                     <Bold className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="hover:text-foreground">
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon-xs">
                     <Italic className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="hover:text-foreground">
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon-xs">
                     <List className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="hover:text-foreground">
+                  </Button>
+                  <Button type="button" variant="ghost" size="icon-xs">
                     <Link2 className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
-                <textarea
+                {/* REPLACEMENT 5: raw <textarea> description → Textarea component */}
+                <Textarea
                   rows={4}
                   placeholder="Add detailed context, acceptance criteria, or technical notes..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full p-3.5 text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden resize-none"
+                  className="w-full text-xs font-medium focus:outline-none resize-none border-0 rounded-none"
                 />
               </div>
             </div>
@@ -197,36 +209,38 @@ export default function CreateTaskModal({
                 <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Status
                 </label>
-                <div className="relative">
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary pr-8"
-                  >
+                {/* REPLACEMENT 6: raw <select> status → Select component */}
+                <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                  <SelectTrigger className="w-full text-xs font-semibold">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {createTaskDefaults.statuses.map((s) => (
-                      <option key={s}>{s}</option>
+                      <SelectItem key={s} value={s}>
+                        {s}
+                      </SelectItem>
                     ))}
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
                 <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Priority
                 </label>
-                <div className="relative">
-                  <select
-                    value={priority}
-                    onChange={(e) => setPriority(e.target.value)}
-                    className="w-full appearance-none px-3.5 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary pr-8"
-                  >
+                {/* REPLACEMENT 7: raw <select> priority → Select component */}
+                <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
+                  <SelectTrigger className="w-full text-xs font-semibold">
+                    <SelectValue placeholder="Select priority" />
+                  </SelectTrigger>
+                  <SelectContent>
                     {createTaskDefaults.priorities.map((p) => (
-                      <option key={p}>{p}</option>
+                      <SelectItem key={p} value={p}>
+                        {p}
+                      </SelectItem>
                     ))}
-                  </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -237,21 +251,25 @@ export default function CreateTaskModal({
                   Assignee
                 </label>
                 <div className="relative flex items-center">
-                  <div className="absolute left-2.5 w-5 h-5 rounded-full bg-muted-foreground/30 overflow-hidden flex items-center justify-center text-[10px] font-bold text-foreground">
+                  <div className="absolute left-2.5 w-5 h-5 rounded-full bg-muted-foreground/30 overflow-hidden flex items-center justify-center text-[10px] font-bold text-foreground z-10">
                     {createTaskDefaults.defaultAssigneeInitials}
                   </div>
-                  <input
+                  {/* REPLACEMENT 8: raw <input type="text"> assignee → Input component */}
+                  <Input
                     type="text"
                     value={assignee}
                     onChange={(e) => setAssignee(e.target.value)}
-                    className="w-full pl-9 pr-8 py-2 bg-card border border-border rounded-lg text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary"
+                    className="w-full pl-9 pr-8 text-xs font-semibold border-border"
                   />
-                  <button
+                  {/* REPLACEMENT 9: raw <button> add assignee → Button variant="ghost" size="icon-xs" */}
+                  <Button
                     type="button"
-                    className="absolute right-2.5 text-muted-foreground hover:text-foreground"
+                    variant="ghost"
+                    size="icon-xs"
+                    className="absolute right-1.5"
                   >
                     <UserPlus className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -259,14 +277,15 @@ export default function CreateTaskModal({
                 <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                   Due Date
                 </label>
+                {/* REPLACEMENT 10: raw <input type="text"> due date → Input component with Calendar icon */}
                 <div className="relative">
                   <Calendar className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  <input
+                  <Input
                     type="text"
                     placeholder="mm/dd/yyyy"
                     value={dueDate}
                     onChange={(e) => setDueDate(e.target.value)}
-                    className="w-full pl-9 px-3.5 py-2 bg-card border border-border rounded-lg text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-primary"
+                    className="w-full pl-9 text-xs font-medium"
                   />
                 </div>
               </div>
@@ -279,27 +298,29 @@ export default function CreateTaskModal({
               </label>
               <div className="w-full px-3 py-1.5 bg-card border border-border rounded-lg flex flex-wrap items-center gap-2 focus-within:border-primary min-h-9.5">
                 {tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary rounded-md text-[11px] font-semibold border border-primary/20"
-                  >
+                  /* REPLACEMENT 11: raw <span> tag pills → Badge variant="outline" */
+                  <Badge key={tag} variant="outline" className="gap-1.5 bg-primary/10 text-primary border-primary/20 text-[11px] font-semibold">
                     {tag}
-                    <button
+                    {/* REPLACEMENT 12: raw <button> remove tag → Button variant="ghost" size="icon-xs" */}
+                    <Button
                       type="button"
+                      variant="ghost"
+                      size="icon-xs"
                       onClick={() => handleRemoveTag(tag)}
-                      className="hover:text-primary cursor-pointer"
+                      className="hover:text-primary"
                     >
                       <X className="w-3 h-3" />
-                    </button>
-                  </span>
+                    </Button>
+                  </Badge>
                 ))}
-                <input
+                {/* REPLACEMENT 13: raw <input type="text"> tag input → Input component */}
+                <Input
                   type="text"
                   placeholder={tags.length === 0 ? "Add tag..." : "Add tag..."}
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
-                  className="flex-1 bg-transparent text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden min-w-20"
+                  className="flex-1 bg-transparent border-0 text-xs font-medium placeholder:text-muted-foreground focus-visible:ring-0 min-w-20 h-auto p-0"
                 />
               </div>
             </div>
@@ -309,33 +330,29 @@ export default function CreateTaskModal({
               <label className="block text-[11px] font-bold text-muted-foreground tracking-wider uppercase mb-1.5">
                 Blocks / Blocked By
               </label>
+              {/* REPLACEMENT 14: raw <input type="text"> dependency search → Input component with Search icon */}
               <div className="relative">
                 <Search className="w-3.5 h-3.5 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
+                <Input
                   type="text"
                   placeholder="Search tasks by ID or name (e.g., TSK-102)"
                   value={blockedQuery}
                   onChange={(e) => setBlockedQuery(e.target.value)}
-                  className="w-full pl-9 pr-3.5 py-2 bg-card border border-border rounded-lg text-xs font-medium text-foreground placeholder:text-muted-foreground focus:outline-hidden focus:border-primary"
+                  className="w-full pl-9 text-xs font-medium"
                 />
               </div>
             </div>
 
             {/* Footer Buttons */}
             <div className="pt-4 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-4 py-2 bg-card hover:bg-muted text-muted-foreground text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-              >
+              {/* REPLACEMENT 15: raw <button> "Cancel" → Button variant="ghost" */}
+              <Button type="button" variant="ghost" onClick={onClose}>
                 Cancel
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground rounded-lg text-xs font-semibold shadow-xs transition-colors cursor-pointer"
-              >
+              </Button>
+              {/* REPLACEMENT 16: raw <button> "Create Task" → Button (default variant) */}
+              <Button type="submit">
                 Create Task
-              </button>
+              </Button>
             </div>
           </form>
         </div>

@@ -45,7 +45,7 @@ export const dashboardSidebarLinks: SidebarLink[] = [
     id: 4,
     icon: ClipboardCheck,
     name: "My Tasks",
-    link: "/dashboard/my-task",
+    link: "/dashboard/my-tasks",
   },
   {
     id: 5,

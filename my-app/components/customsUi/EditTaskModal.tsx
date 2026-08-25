@@ -13,8 +13,27 @@ import {
   Calendar,
   Plus,
   Ban,
+  Loader2,
 } from "lucide-react";
 import { editTaskDefaults, type Subtask } from "@/data/tasks";
+import { toast } from "sonner";
+
+/* ─── shadcn UI imports ─── */
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+
+/* ── localStorage key ── */
+const LS_EDITS_KEY = "dashboard_edited_tasks";
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -22,6 +41,7 @@ interface EditTaskModalProps {
 }
 
 export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
+  // ── Form State ─────────────────────────────────────────────────────────────
   const [taskTitle, setTaskTitle] = useState(editTaskDefaults.title);
   const [description, setDescription] = useState(editTaskDefaults.description);
   const [status, setStatus] = useState(editTaskDefaults.status);
@@ -35,7 +55,18 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
     ...editTaskDefaults.subtasks,
   ]);
 
-  // Handle Escape key to close modal
+  // ── Subtask Inline Editing ─────────────────────────────────────────────────
+  const [editSubtaskId, setEditSubtaskId] = useState<string | null>(null);
+  const [editSubtaskValue, setEditSubtaskValue] = useState("");
+
+  // ── Dependency Visibility ──────────────────────────────────────────────────
+  const [hasDependency, setHasDependency] = useState(true);
+
+  // ── Validation & Submission State ──────────────────────────────────────────
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ── Escape Key Handler ─────────────────────────────────────────────────────
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
@@ -54,6 +85,7 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
 
   if (!isOpen) return null;
 
+  // ── Subtask Helpers ────────────────────────────────────────────────────────
   const toggleSubtask = (id: string) => {
     setSubtasks((prev) =>
       prev.map((st) =>
@@ -71,6 +103,25 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
     setSubtasks([...subtasks, newSubtask]);
   };
 
+  const startEditSubtask = (subtask: Subtask) => {
+    setEditSubtaskId(subtask.id);
+    setEditSubtaskValue(subtask.title);
+  };
+
+  const commitEditSubtask = () => {
+    if (editSubtaskId === null) return;
+    setSubtasks((prev) =>
+      prev.map((st) =>
+        st.id === editSubtaskId
+          ? { ...st, title: editSubtaskValue.trim() || st.title }
+          : st,
+      ),
+    );
+    setEditSubtaskId(null);
+    setEditSubtaskValue("");
+  };
+
+  // ── Tag Helpers ────────────────────────────────────────────────────────────
   const removeTag = (tagToRemove: string) => {
     setTags(tags.filter((t) => t !== tagToRemove));
   };
@@ -83,6 +134,48 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
       }
       setTagInput("");
     }
+  };
+
+  // ── Save Handler: validates, persists edits to localStorage, shows toast ─────
+  const handleSave = async () => {
+    if (!taskTitle.trim()) {
+      setError("Task title is required.");
+      return;
+    }
+
+    setError("");
+    setIsSubmitting(true);
+
+    // Simulate a brief save delay
+    await new Promise((resolve) => setTimeout(resolve, 600));
+
+    const editedTask = {
+      id: editTaskDefaults.code,
+      title: taskTitle.trim(),
+      description,
+      status,
+      priority,
+      assignee,
+      dueDate,
+      tags,
+      subtasks,
+      updatedAt: new Date().toISOString(),
+    };
+
+    // Persist edits to localStorage
+    try {
+      const existing = JSON.parse(localStorage.getItem(LS_EDITS_KEY) || "{}");
+      existing[editedTask.id] = editedTask;
+      localStorage.setItem(LS_EDITS_KEY, JSON.stringify(existing));
+    } catch {
+      /* localStorage unavailable – ignore */
+    }
+
+    setIsSubmitting(false);
+    toast.success("Changes saved", {
+      description: `"${editedTask.title}" has been updated.`,
+    });
+    onClose();
   };
 
   return (
@@ -104,15 +197,12 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
             <h2 className="text-base font-bold text-foreground">Edit Task</h2>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
-            <button className="hover:text-muted-foreground p-1 rounded-md hover:bg-muted transition-colors">
+            <Button variant="ghost" size="icon">
               <MoreVertical className="w-4 h-4" />
-            </button>
-            <button
-              onClick={onClose}
-              className="hover:text-muted-foreground p-1 rounded-md hover:bg-muted transition-colors"
-            >
+            </Button>
+            <Button variant="ghost" size="icon" onClick={onClose}>
               <X className="w-4.5 h-4.5" />
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -125,12 +215,17 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
               <label className="block text-xs font-semibold text-foreground">
                 Task Title
               </label>
-              <input
+              <Input
                 type="text"
                 value={taskTitle}
-                onChange={(e) => setTaskTitle(e.target.value)}
-                className="w-full bg-card border border-border rounded-lg px-3.5 py-2 text-sm text-foreground focus:outline-none focus:border-primary focus:ring-1 focus:ring-ring"
+                onChange={(e) => {
+                  setTaskTitle(e.target.value);
+                  if (error) setError("");
+                }}
               />
+              {error && (
+                <p className="text-xs text-rose-500 font-medium">{error}</p>
+              )}
             </div>
 
             {/* Description */}
@@ -141,28 +236,28 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
               <div className="border border-border rounded-lg overflow-hidden bg-muted/50">
                 {/* Editor Toolbar */}
                 <div className="flex items-center gap-3 px-3 py-2 border-b border-border bg-muted text-muted-foreground">
-                  <button type="button" className="hover:text-foreground">
+                  <Button variant="ghost" size="icon" type="button">
                     <Bold className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="hover:text-foreground">
+                  </Button>
+                  <Button variant="ghost" size="icon" type="button">
                     <Italic className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="hover:text-foreground">
+                  </Button>
+                  <Button variant="ghost" size="icon" type="button">
                     <List className="w-3.5 h-3.5" />
-                  </button>
-                  <button type="button" className="hover:text-foreground">
+                  </Button>
+                  <Button variant="ghost" size="icon" type="button">
                     <ListOrdered className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                   <div className="w-px h-3.5 bg-muted" />
-                  <button type="button" className="hover:text-foreground">
+                  <Button variant="ghost" size="icon" type="button">
                     <Link2 className="w-3.5 h-3.5" />
-                  </button>
+                  </Button>
                 </div>
-                <textarea
+                <Textarea
                   rows={5}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full bg-card px-3.5 py-2.5 text-sm text-foreground focus:outline-none resize-none"
+                  className="border-0 rounded-none focus-visible:ring-0"
                 />
               </div>
             </div>
@@ -173,14 +268,16 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
                 <label className="block text-xs font-semibold text-foreground">
                   Subtasks
                 </label>
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={handleAddSubtask}
-                  className="text-xs font-medium text-primary hover:text-primary inline-flex items-center gap-1 transition-colors"
+                  className="text-xs font-medium text-primary gap-1"
                 >
                   <Plus className="w-3 h-3" />
                   Add Subtask
-                </button>
+                </Button>
               </div>
 
               <div className="space-y-2">
@@ -189,21 +286,39 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
                     key={subtask.id}
                     className="flex items-center gap-3 border border-border rounded-lg px-3 py-2 bg-card"
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={subtask.completed}
-                      onChange={() => toggleSubtask(subtask.id)}
-                      className="w-4 h-4 rounded text-primary focus:ring-ring border-border"
+                      onCheckedChange={() => toggleSubtask(subtask.id)}
                     />
-                    <span
-                      className={`text-xs font-medium ${
-                        subtask.completed
-                          ? "line-through text-muted-foreground"
-                          : "text-foreground"
-                      }`}
-                    >
-                      {subtask.title}
-                    </span>
+                    {/* Subtitle: click to edit inline */}
+                    {editSubtaskId === subtask.id ? (
+                      <Input
+                        type="text"
+                        value={editSubtaskValue}
+                        onChange={(e) => setEditSubtaskValue(e.target.value)}
+                        onBlur={commitEditSubtask}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") commitEditSubtask();
+                          if (e.key === "Escape") {
+                            setEditSubtaskId(null);
+                            setEditSubtaskValue("");
+                          }
+                        }}
+                        autoFocus
+                        className="text-xs h-auto py-0 border-0 shadow-none focus-visible:ring-0 flex-1"
+                      />
+                    ) : (
+                      <span
+                        onClick={() => startEditSubtask(subtask)}
+                        className={`text-xs font-medium cursor-pointer flex-1 ${
+                          subtask.completed
+                            ? "line-through text-muted-foreground"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {subtask.title}
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -217,19 +332,17 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
               <label className="block text-xs font-semibold text-foreground">
                 Status
               </label>
-              <div className="relative">
-                <select
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full bg-card border border-border rounded-lg px-3.5 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-primary pr-8"
-                >
-                  <option value="Todo">Todo</option>
-                  <option value="In Progress">In Progress</option>
-                  <option value="Review">Review</option>
-                  <option value="Done">Done</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <Select value={status} onValueChange={(v) => v && setStatus(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Todo">Todo</SelectItem>
+                  <SelectItem value="In Progress">In Progress</SelectItem>
+                  <SelectItem value="Review">Review</SelectItem>
+                  <SelectItem value="Done">Done</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Priority */}
@@ -237,19 +350,17 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
               <label className="block text-xs font-semibold text-foreground">
                 Priority
               </label>
-              <div className="relative">
-                <select
-                  value={priority}
-                  onChange={(e) => setPriority(e.target.value)}
-                  className="w-full bg-card border border-border rounded-lg px-3.5 py-2 text-xs text-foreground appearance-none focus:outline-none focus:border-primary pr-8"
-                >
-                  <option value="Low">Low</option>
-                  <option value="Medium">Medium</option>
-                  <option value="High">High</option>
-                  <option value="Critical">Critical</option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-muted-foreground absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-              </div>
+              <Select value={priority} onValueChange={(v) => v && setPriority(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select priority" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Low">Low</SelectItem>
+                  <SelectItem value="Medium">Medium</SelectItem>
+                  <SelectItem value="High">High</SelectItem>
+                  <SelectItem value="Critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Assignee */}
@@ -277,13 +388,13 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
               <label className="block text-xs font-semibold text-foreground">
                 Due Date
               </label>
-              <div className="relative flex items-center border border-border rounded-lg px-3 py-2 bg-card">
-                <Calendar className="w-4 h-4 text-muted-foreground mr-2 shrink-0" />
-                <input
+              <div className="relative flex items-center">
+                <Calendar className="absolute left-3 w-4 h-4 text-muted-foreground pointer-events-none" />
+                <Input
                   type="text"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="w-full bg-transparent text-xs text-foreground focus:outline-none"
+                  className="pl-9 text-xs"
                 />
               </div>
             </div>
@@ -296,28 +407,27 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
               <div className="border border-border rounded-lg p-2 bg-card space-y-2">
                 <div className="flex flex-wrap gap-1.5">
                   {tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="inline-flex items-center gap-1 bg-muted text-foreground text-xs font-medium px-2 py-0.5 rounded"
-                    >
+                    <Badge key={tag} variant="outline" className="gap-1">
                       <span>{tag}</span>
-                      <button
+                      <Button
                         type="button"
+                        variant="ghost"
+                        size="icon-xs"
                         onClick={() => removeTag(tag)}
-                        className="text-muted-foreground hover:text-muted-foreground"
+                        className="text-muted-foreground hover:text-muted-foreground -mr-1"
                       >
                         <X className="w-3 h-3" />
-                      </button>
-                    </span>
+                      </Button>
+                    </Badge>
                   ))}
                 </div>
-                <input
+                <Input
                   type="text"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
                   onKeyDown={handleAddTag}
                   placeholder="Add tag..."
-                  className="w-full text-xs text-foreground placeholder:text-muted-foreground focus:outline-none pt-1"
+                  className="border-0 shadow-none focus-visible:ring-0 text-xs px-0 pt-1 h-auto"
                 />
               </div>
             </div>
@@ -328,31 +438,38 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
                 Blocks / Blocked By
               </label>
               <div className="border border-border rounded-lg p-2 bg-card space-y-2">
-                <div className="inline-flex items-center gap-2 bg-amber-50/80 border border-amber-200/60 text-foreground rounded p-1.5 text-xs w-full justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Ban className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                    <span className="font-mono text-[11px] text-muted-foreground">
-                      {editTaskDefaults.blockedBy.code}
-                    </span>
-                    <span className="text-xs font-medium text-foreground truncate max-w-27.5">
-                      {editTaskDefaults.blockedBy.title}
-                    </span>
+                {hasDependency && (
+                  <div className="inline-flex items-center gap-2 bg-amber-50/80 border border-amber-200/60 text-foreground rounded p-1.5 text-xs w-full justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <Ban className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                      <span className="font-mono text-[11px] text-muted-foreground">
+                        {editTaskDefaults.blockedBy.code}
+                      </span>
+                      <span className="text-xs font-medium text-foreground truncate max-w-27.5">
+                        {editTaskDefaults.blockedBy.title}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon-xs"
+                      className="text-muted-foreground hover:text-muted-foreground"
+                      onClick={() => setHasDependency(false)}
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
                   </div>
-                  <button
-                    type="button"
-                    className="text-muted-foreground hover:text-muted-foreground"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                )}
 
-                <button
+                <Button
                   type="button"
-                  className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 pt-1"
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-muted-foreground hover:text-foreground gap-1 pt-1"
                 >
                   <Link2 className="w-3.5 h-3.5" />
                   <span>Add Dependency</span>
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -360,19 +477,19 @@ export default function EditTaskModal({ isOpen, onClose }: EditTaskModalProps) {
 
         {/* Modal Footer Actions */}
         <div className="px-6 py-4 bg-muted/50 border-t border-border flex items-center justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
-          >
+          <Button variant="ghost" type="button" onClick={onClose}>
             Cancel
-          </button>
-          <button
-            type="button"
-            className="px-4 py-2 text-xs font-medium bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg shadow-xs transition-colors"
-          >
-            Save Changes
-          </button>
+          </Button>
+          <Button type="button" onClick={handleSave} disabled={isSubmitting}>
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              "Save Changes"
+            )}
+          </Button>
         </div>
       </div>
     </div>
