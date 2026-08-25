@@ -24,18 +24,18 @@ export default function Error({
           Error
         </p>
 
-        <h2 className="mt-2 text-2xl font-bold text-slate-900 dark:text-white">
+        <h2 className="mt-2 text-2xl font-bold text-foreground">
           Unable to load this page
         </h2>
 
-        <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-sm leading-6 text-muted-foreground dark:text-muted-foreground">
           Something unexpected happened while loading this section of your
           dashboard.
         </p>
 
         <button
           onClick={() => reset()}
-          className="mt-6 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+          className="mt-6 rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary-hover dark:bg-card dark:hover:bg-muted"
         >
           Try again
         </button>
