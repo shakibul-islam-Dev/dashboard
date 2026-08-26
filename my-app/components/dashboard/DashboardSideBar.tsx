@@ -27,12 +27,12 @@ export default function DashboardSideBar({
   onMobileClose,
 }: DashboardSideBarProps) {
   // --- Persist collapsed state to localStorage ---
-  const [isOpen, setIsOpen] = useState<boolean>(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("sidebar-collapsed") !== "true";
-    }
-    return true;
-  });
+  const [isOpen, setIsOpen] = useState<boolean>(true);
+
+  useEffect(() => {
+    const collapsed = localStorage.getItem("sidebar-collapsed") === "true";
+    setIsOpen(!collapsed);
+  }, []);
 
   const pathname = usePathname();
 
