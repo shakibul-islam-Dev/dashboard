@@ -1,6 +1,14 @@
 "use client";
 
-import { Search, Bell, CircleHelp, Menu, LogOut, Settings, User } from "lucide-react";
+import {
+  Search,
+  Bell,
+  CircleHelp,
+  Menu,
+  LogOut,
+  Settings,
+  User,
+} from "lucide-react";
 import { currentUser } from "@/data/navigation";
 import { dropdownNotifications } from "@/data/notifications";
 import Image from "next/image";
@@ -121,7 +129,12 @@ export default function DashboardNavigation({
               </span>
             )}
           </Button>
-          {isShowComponent && <NotificationsModal isOpen={isShowComponent} onClose={() => setShowComponent(false)} />}
+          {isShowComponent && (
+            <NotificationsModal
+              isOpen={isShowComponent}
+              onClose={() => setShowComponent(false)}
+            />
+          )}
         </div>
 
         {/* Help Icon — ghost icon button linking to help & support page */}
@@ -149,19 +162,29 @@ export default function DashboardNavigation({
           {showUserMenu && (
             <div className="absolute right-0 top-full mt-2 w-44 bg-card border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in duration-150">
               <div className="px-3 py-2 border-b border-border">
-                <p className="text-sm font-semibold text-foreground">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">{currentUser.role}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {currentUser.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {currentUser.role}
+                </p>
               </div>
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
-                onClick={() => { setShowUserMenu(false); router.push("/dashboard/settings"); }}
+                onClick={() => {
+                  setShowUserMenu(false);
+                  router.push("/dashboard/settings");
+                }}
               >
                 <User className="w-4 h-4 text-muted-foreground" />
                 Profile
               </button>
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
-                onClick={() => { setShowUserMenu(false); router.push("/dashboard/settings"); }}
+                onClick={() => {
+                  setShowUserMenu(false);
+                  router.push("/dashboard/settings");
+                }}
               >
                 <Settings className="w-4 h-4 text-muted-foreground" />
                 Settings
