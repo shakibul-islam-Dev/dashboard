@@ -2,14 +2,24 @@
 
 import DashboardNavigation from "@/components/dashboard/DashboardNavigation";
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
-import React, { useState } from "react";
+import { useSession } from "@/lib/auth";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const router = useRouter();
+  const session = useSession();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (!session) router.replace("/login");
+  }, [session, router]);
+
+  if (!session) return null;
 
   return (
     <div className="flex h-screen w-full bg-muted overflow-hidden">

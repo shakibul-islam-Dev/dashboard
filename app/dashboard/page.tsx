@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Zap, Calendar } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,11 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import PathProvider from "@/components/customsUi/PathProvider";
 import Link from "next/link";
-import { dashboardProjects } from "@/data/projects";
+import { dashboardProjects as initialDashboardProjects } from "@/data/projects";
+import {
+  useCustomProjects,
+  customProjectToDashboardProject,
+} from "@/lib/customStore";
 import { dashboardStats } from "@/data/analytics";
 import { recentActivityData } from "@/data/activity";
 import RouterNavigation from "@/components/customsUi/RouterNavigation";
@@ -23,6 +27,18 @@ export default function DashboardHome() {
   const [loading, setLoading] = useState(true);
   // ── Error state ──
   const [error, setError] = useState(false);
+
+  // ── Custom projects created via the Create Project modal ──
+  const { projects: customProjects } = useCustomProjects();
+
+  // ── Merge static seed data with user-created projects ──
+  const dashboardProjects = useMemo(
+    () => [
+      ...initialDashboardProjects,
+      ...customProjects.map(customProjectToDashboardProject),
+    ],
+    [customProjects],
+  );
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 500);

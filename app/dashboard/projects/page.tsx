@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import PathProvider from "@/components/customsUi/PathProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +17,11 @@ import {
   ChevronDown,
 } from "lucide-react";
 import Link from "next/link";
-import { projectsPageData as projects } from "@/data/projects";
+import { projectsPageData as initialProjects } from "@/data/projects";
+import {
+  useCustomProjects,
+  customProjectToProject,
+} from "@/lib/customStore";
 import Image from "next/image";
 import RouterNavigation from "@/components/customsUi/RouterNavigation";
 import CreateProjectModal from "@/components/customsUi/CreateProjectModal";
@@ -40,6 +44,18 @@ export default function ProjectsPage() {
   const [sortOpen, setSortOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
+
+  /* ---- Custom projects created via the Create Project modal ---- */
+  const { projects: customProjects } = useCustomProjects();
+
+  /* ---- Merge static seed data with user-created projects ---- */
+  const projects = useMemo(
+    () => [
+      ...initialProjects,
+      ...customProjects.map(customProjectToProject),
+    ],
+    [customProjects],
+  );
 
   /* ------------------------------------------------------------------ */
   /*  1. Filter projects                                                 */
@@ -453,16 +469,25 @@ export default function ProjectsPage() {
                   {/* Card Footer: Assignee Avatars */}
                   <div className="flex items-center justify-between pt-3 border-t border-border">
                     <div className="flex -space-x-2 overflow-hidden">
-                      {project.avatars.map((imgUrl, i) => (
-                        <Image
-                          key={i}
-                          src={imgUrl}
-                          width={300}
-                          height={300}
-                          alt="Avatar"
-                          className="inline-block h-6 w-6 rounded-full ring-2 ring-card object-cover"
-                        />
-                      ))}
+                      {project.avatars.map((av, i) =>
+                        av.startsWith("http") ? (
+                          <Image
+                            key={i}
+                            src={av}
+                            width={300}
+                            height={300}
+                            alt="Avatar"
+                            className="inline-block h-6 w-6 rounded-full ring-2 ring-card object-cover"
+                          />
+                        ) : (
+                          <div
+                            key={i}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-muted text-foreground text-[9px] font-bold ring-2 ring-card"
+                          >
+                            {av}
+                          </div>
+                        ),
+                      )}
                     </div>
                   </div>
                 </CardContent>

@@ -3,37 +3,31 @@ import { CheckCircle2 } from "lucide-react";
 
 const Navigation = () => {
   return (
-    <nav className="w-full border-b border-slate-100 bg-white px-6 py-3.5 shadow-xs">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
+    <nav className="w-full border-b border-border bg-card px-6 py-3.5 shadow-xs">
+      <div className="mx-auto flex max-w-6xl items-center justify-between">
         {/* Logo Section */}
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0256d0]">
-            <CheckCircle2 className="h-5 w-5 text-white stroke-[2.5]" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+            <CheckCircle2 className="h-5 w-5 text-primary-foreground stroke-[2.5]" />
           </div>
-          <span className="text-xl font-bold tracking-tight text-[#0256d0]">
+          <span className="text-xl font-bold tracking-tight text-foreground">
             TaskBoard
           </span>
         </Link>
 
         {/* Navigation Links */}
-        <div className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+        <div className="hidden items-center gap-8 text-sm font-medium text-muted-foreground md:flex">
           <Link
-            href="#features"
-            className="transition-colors hover:text-slate-900"
+            href="/#features"
+            className="transition-colors hover:text-foreground"
           >
             Features
           </Link>
           <Link
-            href="#pricing"
-            className="transition-colors hover:text-slate-900"
+            href="/#pricing"
+            className="transition-colors hover:text-foreground"
           >
             Pricing
-          </Link>
-          <Link
-            href="#documentation"
-            className="transition-colors hover:text-slate-900"
-          >
-            Documentation
           </Link>
         </div>
 
@@ -41,13 +35,13 @@ const Navigation = () => {
         <div className="flex items-center gap-5 text-sm">
           <Link
             href="/login"
-            className="font-medium text-slate-600 transition-colors hover:text-slate-900"
+            className="font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             Log in
           </Link>
           <Link
             href="/registration"
-            className="rounded-lg bg-[#0256d0] px-4 py-2 font-medium text-white transition-all duration-200 hover:bg-[#0246a8] active:scale-[0.98]"
+            className="rounded-lg bg-primary px-4 py-2 font-medium text-primary-foreground transition-all duration-200 hover:bg-primary-hover active:scale-[0.98]"
           >
             Get Started
           </Link>

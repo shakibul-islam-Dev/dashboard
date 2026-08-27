@@ -2,8 +2,11 @@
 
 import { Mail, LockKeyhole } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { useForm, SubmitHandler } from "react-hook-form";
+import { loginUser } from "@/lib/auth";
 
 type LoginInputs = {
   email: string;
@@ -12,14 +15,25 @@ type LoginInputs = {
 };
 
 const LoginComponents = () => {
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<LoginInputs>();
 
-  const onSubmit: SubmitHandler<LoginInputs> = (data) => {
-    console.log("Login Data:", data);
+  const onSubmit: SubmitHandler<LoginInputs> = async (data) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const result = loginUser(data.email, data.password);
+    if (!result.ok) {
+      toast.error("Login failed", { description: result.error });
+      return;
+    }
+    toast.success("Login successful", {
+      description: "Welcome back to Task Board!",
+    });
+    router.push("/dashboard");
   };
 
   return (

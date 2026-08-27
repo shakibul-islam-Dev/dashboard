@@ -13,6 +13,8 @@ import {
   Loader2,
 } from "lucide-react";
 import { createTaskDefaults } from "@/data/tasks";
+import { projectsPageData } from "@/data/projects";
+import { useCustomTasks, type CustomTask } from "@/lib/customStore";
 import { toast } from "sonner";
 
 // shadcn UI Components
@@ -28,8 +30,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-/* ── localStorage key for persisted tasks ── */
-const LS_TASKS_KEY = "dashboard_custom_tasks";
+/* ── localStorage key for persisted tasks (managed by lib/customStore) ── */
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -40,9 +41,13 @@ export default function CreateTaskModal({
   isOpen,
   onClose,
 }: CreateTaskModalProps) {
+  // ── Reactive store: pushes the new task to every listening UI ──
+  const { addTask } = useCustomTasks();
+
   // ── Form State ─────────────────────────────────────────────────────────────
   const [taskTitle, setTaskTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [project, setProject] = useState(projectsPageData[0]?.title ?? "General");
   const [status, setStatus] = useState(createTaskDefaults.statuses[0]);
   const [priority, setPriority] = useState(createTaskDefaults.priorities[1]);
   const [assignee] = useState(createTaskDefaults.defaultAssignee);
@@ -87,10 +92,11 @@ export default function CreateTaskModal({
     // Simulate a brief network delay for realistic UX
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const newTask = {
-      id: `TSK-${Date.now()}`,
+    const newTask: CustomTask = {
+      id: `TASK-${Date.now()}`,
       title: taskTitle.trim(),
       description,
+      project,
       status,
       priority,
       assignee,
@@ -100,14 +106,8 @@ export default function CreateTaskModal({
       createdAt: new Date().toISOString(),
     };
 
-    // Persist to localStorage
-    try {
-      const existing = JSON.parse(localStorage.getItem(LS_TASKS_KEY) || "[]");
-      existing.push(newTask);
-      localStorage.setItem(LS_TASKS_KEY, JSON.stringify(existing));
-    } catch {
-      /* localStorage unavailable – ignore */
-    }
+    // Persist + notify all mounted UI (My Tasks, Dashboard, ...)
+    addTask(newTask);
 
     setIsSubmitting(false);
     toast.success("Task created", {
@@ -117,6 +117,7 @@ export default function CreateTaskModal({
     // Reset form and close
     setTaskTitle("");
     setDescription("");
+    setProject(projectsPageData[0]?.title ?? "General");
     setStatus(createTaskDefaults.statuses[0]);
     setPriority(createTaskDefaults.priorities[1]);
     setDueDate("");
@@ -257,6 +258,26 @@ export default function CreateTaskModal({
 
           {/* Assignee & Due Date Row */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* Project */}
+            <div className="space-y-1.5">
+              <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                Project
+              </label>
+              <Select value={project} onValueChange={(v) => v && setProject(v)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectsPageData.map((p) => (
+                    <SelectItem key={p.id} value={p.title}>
+                      {p.title}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="General">General</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Assignee */}
             <div className="space-y-1.5">
               <label className="block text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">

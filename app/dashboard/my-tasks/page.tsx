@@ -14,6 +14,10 @@ import {
   X,
 } from "lucide-react";
 import { myTasks as initialTasks, type MyTask } from "@/data/tasks";
+import {
+  useCustomTasks,
+  customTaskToMyTask,
+} from "@/lib/customStore";
 import RouterNavigation from "@/components/customsUi/RouterNavigation";
 import CreateTaskModal from "@/components/customsUi/CreateTaskModal";
 import TaskDetailModal from "@/components/customsUi/TaskDetailModal";
@@ -38,7 +42,14 @@ type SectionFilter = "ALL" | "OVERDUE" | "TODAY";
 type SortDirection = "asc" | "desc";
 
 export default function MyTaskPage() {
-  const [tasks] = useState<MyTask[]>(initialTasks);
+  // ── Custom tasks created via the Create Task modal (localStorage-backed) ──
+  const { tasks: customTasks } = useCustomTasks();
+
+  // ── Merge static seed data with user-created tasks ──
+  const tasks = useMemo<MyTask[]>(
+    () => [...initialTasks, ...customTasks.map(customTaskToMyTask)],
+    [customTasks],
+  );
 
   // === SEARCH FUNCTIONALITY ===
   const [searchQuery, setSearchQuery] = useState("");
@@ -56,7 +67,6 @@ export default function MyTaskPage() {
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
 
   // === TASK DETAIL MODAL ===
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   // === FILTERED AND SORTED TASKS ===
@@ -118,7 +128,6 @@ export default function MyTaskPage() {
   const allVisibleIds = filteredTasks.map((t) => t.id);
   const allSelected =
     allVisibleIds.length > 0 && allVisibleIds.every((id) => selectedTasks.has(id));
-  const someSelected = allVisibleIds.some((id) => selectedTasks.has(id));
 
   const toggleSelectAll = () => {
     if (allSelected) {
@@ -141,8 +150,7 @@ export default function MyTaskPage() {
   };
 
   // === TASK CLICK HANDLER ===
-  const handleTaskClick = (taskId: string) => {
-    setSelectedTaskId(taskId);
+  const handleTaskClick = () => {
     setShowDetailModal(true);
   };
 
@@ -342,10 +350,7 @@ export default function MyTaskPage() {
       {/* Task Detail Modal */}
       <TaskDetailModal
         isOpen={showDetailModal}
-        onClose={() => {
-          setShowDetailModal(false);
-          setSelectedTaskId(null);
-        }}
+        onClose={() => setShowDetailModal(false)}
       />
     </div>
   );
@@ -463,19 +468,29 @@ function TaskTable({
 }
 
 // === BADGE HELPERS ===
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  "In Progress": "bg-primary/10 text-primary border border-primary/20 hover:bg-primary/10",
+  Review: "bg-amber-500/10 text-amber-600 border border-amber-500/20 hover:bg-amber-500/10 dark:text-amber-400",
+  Done: "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20 hover:bg-emerald-500/10 dark:text-emerald-400",
+};
+
+const STATUS_DOT_STYLES: Record<string, string> = {
+  "In Progress": "bg-primary",
+  Review: "bg-amber-500",
+  Done: "bg-emerald-500",
+};
+
 function StatusBadge({ status }: { status: string }) {
-  if (status === "In Progress") {
-    return (
-      <Badge className="gap-1.5 bg-primary/10 text-primary border border-primary/20 hover:bg-primary/10">
-        <span className="w-1.5 h-1.5 rounded-full bg-primary/100"></span>
-        In Progress
-      </Badge>
-    );
-  }
+  const hasStyle = Boolean(STATUS_BADGE_STYLES[status]);
   return (
-    <Badge variant="secondary" className="gap-1.5 hover:bg-secondary">
-      <span className="w-1.5 h-1.5 rounded-full bg-muted-foreground"></span>
-      Todo
+    <Badge
+      variant={hasStyle ? "default" : "secondary"}
+      className={`gap-1.5 ${STATUS_BADGE_STYLES[status] ?? "hover:bg-secondary"}`}
+    >
+      <span
+        className={`w-1.5 h-1.5 rounded-full ${STATUS_DOT_STYLES[status] ?? "bg-muted-foreground"}`}
+      ></span>
+      {status}
     </Badge>
   );
 }
@@ -494,6 +509,13 @@ function PriorityBadge({ priority }: { priority: string }) {
         <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-600">
           <ChevronUp className="w-3.5 h-3.5" />
           High
+        </span>
+      );
+    case "Low":
+      return (
+        <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          <ChevronDown className="w-3.5 h-3.5" />
+          Low
         </span>
       );
     default:

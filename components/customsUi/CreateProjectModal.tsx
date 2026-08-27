@@ -4,6 +4,10 @@ import React, { useState, useEffect } from "react";
 import { X, Calendar, Plus, Loader2 } from "lucide-react";
 import { projectStatusOptions } from "@/data/tasks";
 import { defaultProjectMembers, type MemberAvatar } from "@/data/team";
+import {
+  useCustomProjects,
+  type CustomProject,
+} from "@/lib/customStore";
 import { toast } from "sonner";
 
 // ── shadcn UI Components ──────────────────────────────────────────────────────
@@ -19,8 +23,7 @@ import {
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
-/* ── localStorage key ── */
-const LS_PROJECTS_KEY = "dashboard_custom_projects";
+/* ── localStorage key (managed by lib/customStore) ── */
 
 // ──────────────────────────────────────────────────────────────────────────────
 // Types
@@ -52,6 +55,9 @@ export default function CreateProjectModal({
   isOpen,
   onClose,
 }: CreateProjectModalProps) {
+  // ── Reactive store: pushes the new project to every listening UI ──
+  const { addProject } = useCustomProjects();
+
   // ── Form State ─────────────────────────────────────────────────────────────
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
@@ -116,7 +122,7 @@ export default function CreateProjectModal({
     // Simulate a brief network delay
     await new Promise((resolve) => setTimeout(resolve, 600));
 
-    const newProject = {
+    const newProject: CustomProject = {
       id: `PRJ-${Date.now()}`,
       name: projectName.trim(),
       description,
@@ -127,14 +133,8 @@ export default function CreateProjectModal({
       createdAt: new Date().toISOString(),
     };
 
-    // Persist to localStorage
-    try {
-      const existing = JSON.parse(localStorage.getItem(LS_PROJECTS_KEY) || "[]");
-      existing.push(newProject);
-      localStorage.setItem(LS_PROJECTS_KEY, JSON.stringify(existing));
-    } catch {
-      /* localStorage unavailable – ignore */
-    }
+    // Persist + notify all mounted UI (Projects, Dashboard, ...)
+    addProject(newProject);
 
     setIsSubmitting(false);
     toast.success("Project created", {

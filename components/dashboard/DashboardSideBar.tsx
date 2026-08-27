@@ -14,6 +14,7 @@ import {
   dashboardSidebarLinks as sidebarLinks,
   currentUser,
 } from "@/data/navigation";
+import { useSession } from "@/lib/auth";
 // Button component from shadcn/ui (base-ui)
 import { Button } from "@/components/ui/button";
 
@@ -34,9 +35,10 @@ export default function DashboardSideBar({
     setIsOpen(!collapsed);
   }, []);
 
+  const sessionUser = useSession();
+
   const pathname = usePathname();
 
-  // Save collapsed state to localStorage on toggle
   const toggleSidebar = () => {
     setIsOpen((prev) => {
       const next = !prev;
@@ -84,9 +86,7 @@ export default function DashboardSideBar({
         {/* Top Section: Logo/Title & Toggle */}
         <div className="flex items-center justify-between p-4 border-b border-border h-16">
           <div className={labelClasses("overflow-hidden")}>
-            <h1 className="font-bold text-xl text-foreground">
-              Task Board
-            </h1>
+            <h1 className="font-bold text-xl text-foreground">Task Board</h1>
           </div>
 
           {/* Desktop Collapse Toggle — ghost icon button for sidebar collapse */}
@@ -159,7 +159,9 @@ export default function DashboardSideBar({
             <Link
               href="/dashboard/help&support"
               onClick={onMobileClose}
-              className={getLinkClasses(isActiveRoute("/dashboard/help&support"))}
+              className={getLinkClasses(
+                isActiveRoute("/dashboard/help&support"),
+              )}
               title={!isOpen && !mobileOpen ? "Help & Support" : ""}
             >
               <div className="min-w-fit">
@@ -173,9 +175,7 @@ export default function DashboardSideBar({
           <Link
             href="/dashboard/settings"
             className={`flex items-center gap-3 p-2 mt-2 rounded-lg transition-colors cursor-pointer ${
-              isOpen || mobileOpen
-                ? "hover:bg-muted"
-                : ""
+              isOpen || mobileOpen ? "hover:bg-muted" : ""
             }`}
           >
             <div className="p-2 bg-primary/15 text-primary rounded-full min-w-fit">
@@ -187,10 +187,10 @@ export default function DashboardSideBar({
               } ${isOpen ? "lg:block lg:opacity-100" : "lg:hidden lg:opacity-0"}`}
             >
               <h1 className="font-bold text-sm text-foreground">
-                {currentUser.name}
+                {sessionUser?.fullName ?? currentUser.name}
               </h1>
               <p className="text-xs text-muted-foreground">
-                {currentUser.role}
+                {sessionUser?.role ?? currentUser.role}
               </p>
             </div>
           </Link>

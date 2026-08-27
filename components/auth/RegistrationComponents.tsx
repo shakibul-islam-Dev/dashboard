@@ -2,8 +2,11 @@
 
 import { User, Mail, LockKeyhole } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import { useForm, SubmitHandler } from "react-hook-form";
+import { registerUser, loginUser } from "@/lib/auth";
 
 type RegistrationInputs = {
   fullName: string;
@@ -12,14 +15,26 @@ type RegistrationInputs = {
 };
 
 const RegistrationComponents = () => {
+  const router = useRouter();
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<RegistrationInputs>();
 
-  const onSubmit: SubmitHandler<RegistrationInputs> = (data) => {
-    console.log("Registration Data:", data);
+  const onSubmit: SubmitHandler<RegistrationInputs> = async (data) => {
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    const result = registerUser(data.fullName, data.email, data.password);
+    if (!result.ok) {
+      toast.error("Registration failed", { description: result.error });
+      return;
+    }
+    loginUser(data.email, data.password);
+    toast.success("Account created", {
+      description: "Welcome to Task Board!",
+    });
+    router.push("/dashboard");
   };
 
   return (

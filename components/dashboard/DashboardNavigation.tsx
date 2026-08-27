@@ -3,6 +3,7 @@
 import { Search, Bell, CircleHelp, Menu, LogOut, Settings, User } from "lucide-react";
 import { currentUser } from "@/data/navigation";
 import { dropdownNotifications } from "@/data/notifications";
+import { logoutUser, useSession } from "@/lib/auth";
 import Image from "next/image";
 import { useState, useRef, useEffect } from "react";
 import NotificationsModal from "../customsUi/NotificationsModal";
@@ -35,6 +36,9 @@ export default function DashboardNavigation({
   // --- User menu dropdown ---
   const [showUserMenu, setShowUserMenu] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // --- Logged-in user from localStorage session ---
+  const sessionUser = useSession();
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -149,8 +153,12 @@ export default function DashboardNavigation({
           {showUserMenu && (
             <div className="absolute right-0 top-full mt-2 w-44 bg-card border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in duration-150">
               <div className="px-3 py-2 border-b border-border">
-                <p className="text-sm font-semibold text-foreground">{currentUser.name}</p>
-                <p className="text-xs text-muted-foreground">{currentUser.role}</p>
+                <p className="text-sm font-semibold text-foreground">
+                  {sessionUser?.fullName ?? currentUser.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {sessionUser?.email ?? currentUser.role}
+                </p>
               </div>
               <button
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-foreground hover:bg-muted transition-colors"
@@ -171,9 +179,11 @@ export default function DashboardNavigation({
                 className="flex items-center gap-2 w-full px-3 py-2 text-xs text-rose-600 hover:bg-muted transition-colors"
                 onClick={() => {
                   setShowUserMenu(false);
-                  toast.info("Sign out", {
-                    description: "Sign out functionality coming soon.",
+                  logoutUser();
+                  toast.success("Signed out", {
+                    description: "You have been logged out successfully.",
                   });
+                  router.replace("/login");
                 }}
               >
                 <LogOut className="w-4 h-4" />
