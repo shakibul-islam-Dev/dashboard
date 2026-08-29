@@ -44,6 +44,7 @@ export default function Notifications() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- must sync after mount to avoid SSR/hydration mismatch
       if (raw) setSettings((prev) => ({ ...prev, ...JSON.parse(raw) }));
     } catch {
       /* ignore */

@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import PathProvider from "@/components/customsUi/PathProvider";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
@@ -15,16 +16,30 @@ import {
   List,
   Calendar,
   ChevronDown,
+  PencilLine,
+  Archive,
+  Trash2,
+  Undo2,
 } from "lucide-react";
 import Link from "next/link";
 import { projectsPageData as initialProjects } from "@/data/projects";
 import {
   useCustomProjects,
   customProjectToProject,
+  useIdSet,
+  updateIdSet,
+  useProjectEditOverrides,
+  PROJECT_STYLES,
+  LS_ARCHIVED_PROJECTS_KEY,
+  LS_DELETED_PROJECTS_KEY,
+  type ProjectEditOverride,
 } from "@/lib/customStore";
+import { filterAndSortProjects } from "@/lib/projectFilters";
+import type { MemberAvatar } from "@/data/team";
 import Image from "next/image";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
 import CreateProjectModal from "@/components/customsUi/CreateProjectModal";
+import { toast } from "sonner";
+import { AnimatePresence, motion } from "motion/react";
 
 /* ------------------------------------------------------------------ */
 /*  Sort helper – returns a label for each sort option                 */
@@ -35,86 +50,231 @@ const sortLabels: Record<string, string> = {
   progress: "Progress",
 };
 
+const cardItem = {
+  hidden: { opacity: 0, y: 28 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 260, damping: 24 },
+  },
+};
+
+type ProjectFilter = "All" | "Active" | "Completed" | "Paused" | "Archived";
+
+/* Shape handed to the CreateProjectModal in edit mode */
+interface EditableProjectShape {
+  id: string;
+  isCustom: boolean;
+  name: string;
+  description: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  teamMembers: MemberAvatar[];
+}
+
 export default function ProjectsPage() {
   /* ---- State ---- */
-  const [filter, setFilter] = useState("All");
+  const [filter, setFilter] = useState<ProjectFilter>("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const [sortOption, setSortOption] = useState<"modified" | "name" | "progress">("modified");
   const [sortOpen, setSortOpen] = useState(false);
   const [menuOpenId, setMenuOpenId] = useState<string | null>(null);
+  const [editProjectId, setEditProjectId] = useState<string | null>(null);
   const [showCreateProject, setShowCreateProject] = useState(false);
 
   /* ---- Custom projects created via the Create Project modal ---- */
-  const { projects: customProjects } = useCustomProjects();
+  const { projects: customProjects, removeProject } = useCustomProjects();
 
-  /* ---- Merge static seed data with user-created projects ---- */
-  const projects = useMemo(
-    () => [
+  /* ---- Lifecycle overrides: archived + deleted ids, edited fields ---- */
+  const archivedSet = useIdSet(LS_ARCHIVED_PROJECTS_KEY);
+  const deletedSet = useIdSet(LS_DELETED_PROJECTS_KEY);
+  const editOverrides = useProjectEditOverrides();
+
+  /* ---- Merge static seed data + user-created projects + persisted edits ---- */
+  const projects = useMemo(() => {
+    const base = [
       ...initialProjects,
       ...customProjects.map(customProjectToProject),
-    ],
-    [customProjects],
+    ];
+    return base.map((project) => {
+      const override: ProjectEditOverride | undefined = editOverrides[project.id];
+      if (!override) return project;
+
+      const status = override.status ?? project.status;
+      const styles =
+        PROJECT_STYLES[status] ??
+        PROJECT_STYLES[project.status] ??
+        PROJECT_STYLES["In Progress"];
+
+      return {
+        ...project,
+        title: override.title ?? project.title,
+        description: override.description ?? project.description,
+        status,
+        statusColor: styles.statusColor,
+        borderColor: styles.borderColor,
+        progressColor: styles.progressColor,
+      };
+    });
+  }, [customProjects, editOverrides]);
+
+  /* ---- Active vs archived sets ---- */
+  const nonArchivedProjects = useMemo(
+    () =>
+      projects.filter(
+        (p) => !archivedSet.has(p.id) && !deletedSet.has(p.id),
+      ),
+    [projects, archivedSet, deletedSet],
+  );
+
+  const archivedProjects = useMemo(
+    () =>
+      projects.filter((p) => archivedSet.has(p.id) && !deletedSet.has(p.id)),
+    [projects, archivedSet, deletedSet],
   );
 
   /* ------------------------------------------------------------------ */
   /*  1. Filter projects                                                 */
   /* ------------------------------------------------------------------ */
-  const filteredProjects = projects
-    .filter((project) => {
-      const matchesSearch =
-        project.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        project.description.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredProjects = useMemo(() => {
+    const source = filter === "Archived" ? archivedProjects : nonArchivedProjects;
+    return filterAndSortProjects(source, filter, searchTerm, sortOption);
+  }, [filter, archivedProjects, nonArchivedProjects, searchTerm, sortOption]);
 
-      if (filter === "All") return matchesSearch;
-      if (filter === "Active")
-        return matchesSearch && project.status === "In Progress";
-      if (filter === "Completed")
-        return matchesSearch && project.progress === 100;
-      if (filter === "Paused")
-        return (
-          matchesSearch &&
-          (project.status === "Planning" || project.status === "Blocked")
-        );
-      return matchesSearch;
-    })
-    /* ---------------------------------------------------------------- */
-    /*  1a. Sort projects                                                */
-    /* ---------------------------------------------------------------- */
-    .sort((a, b) => {
-      if (sortOption === "name") return a.title.localeCompare(b.title);
-      if (sortOption === "progress") return b.progress - a.progress;
-      // "modified" – default: keep original order (already last‑modified)
-      return 0;
+  /* ---- Shape passed to the modal when editing a project ---- */
+  const editableProject = useMemo<EditableProjectShape | null>(() => {
+    if (!editProjectId) return null;
+
+    const custom = customProjects.find((p) => p.id === editProjectId);
+    const base = projects.find((p) => p.id === editProjectId);
+    if (!base) return null;
+
+    if (custom) {
+      return {
+        id: custom.id,
+        isCustom: true,
+        name: custom.name,
+        description: custom.description,
+        status: custom.status,
+        startDate: custom.startDate,
+        endDate: custom.endDate,
+        teamMembers: custom.teamMembers,
+      };
+    }
+
+    return {
+      id: base.id,
+      isCustom: false,
+      name: base.title,
+      description: base.description,
+      status: base.status,
+      startDate: "",
+      endDate: "",
+      teamMembers: [],
+    };
+  }, [editProjectId, customProjects, projects]);
+
+  /* ------------------------------------------------------------------ */
+  /*  2. Project actions (Edit / Archive / Restore / Delete)             */
+  /* ------------------------------------------------------------------ */
+  const isCustomProject = (id: string) =>
+    customProjects.some((p) => p.id === id);
+
+  const handleMenuAction = (action: string, id: string) => {
+    if (action === "Edit") {
+      setEditProjectId(id);
+      setShowCreateProject(true);
+    } else if (action === "Archive") {
+      updateIdSet(LS_ARCHIVED_PROJECTS_KEY, id, true);
+      toast.success("Project archived", {
+        description: "Restore it anytime from the Archived filter.",
+      });
+    } else if (action === "Delete") {
+      if (isCustomProject(id)) {
+        removeProject(id);
+      } else {
+        updateIdSet(LS_DELETED_PROJECTS_KEY, id, true);
+      }
+      updateIdSet(LS_ARCHIVED_PROJECTS_KEY, id, false);
+      toast.success("Project deleted", {
+        description: "The project has been permanently removed.",
+      });
+    }
+    setMenuOpenId(null);
+  };
+
+  const handleRestore = (id: string) => {
+    updateIdSet(LS_ARCHIVED_PROJECTS_KEY, id, false);
+    toast.success("Project restored", {
+      description: "The project is back in the active list.",
     });
+  };
+
+  const handleArchiveDelete = (id: string) => {
+    if (isCustomProject(id)) {
+      removeProject(id);
+    } else {
+      updateIdSet(LS_DELETED_PROJECTS_KEY, id, true);
+    }
+    updateIdSet(LS_ARCHIVED_PROJECTS_KEY, id, false);
+    toast.success("Project deleted", {
+      description: "The project has been permanently removed.",
+    });
+  };
 
   return (
-    <div className="p-4 sm:p-8 max-w-7xl mx-auto space-y-6 bg-transparent min-h-screen">
+    <PageContainer>
+    <motion.div
+      initial="hidden"
+      animate="show"
+      variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
+      className="bg-transparent font-sans text-foreground space-y-6"
+    >
       {/* Path / Breadcrumb & Header Title */}
-      <RouterNavigation />
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <PageNav />
+      <motion.div
+        initial={{ opacity: 0, y: -16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ type: "spring", stiffness: 260, damping: 24 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+      >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">
-            <PathProvider />
+            Projects
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             Manage and track all your team&apos;s projects.
           </p>
         </div>
-        {/* --- 5. CreateProjectModal trigger --- */}
+        {/* --- New Project trigger --- */}
         <Button
-          onClick={() => setShowCreateProject(true)}
+          onClick={() => {
+            setEditProjectId(null);
+            setShowCreateProject(true);
+          }}
           className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium shadow-sm transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4 mr-1.5" /> New Project
         </Button>
-        {showCreateProject && (
-          <CreateProjectModal isOpen={showCreateProject} onClose={() => setShowCreateProject(false)} />
-        )}
-      </div>
+      </motion.div>
+
+      {/* Create / Edit Project Modal (always mounted so exit animations play) */}
+      <CreateProjectModal
+        key={editableProject?.id ?? "new"}
+        isOpen={showCreateProject}
+        onClose={() => setShowCreateProject(false)}
+        editableProject={editableProject}
+      />
 
       {/* Toolbar: Search, Filters & View Options */}
-      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-2">
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, type: "spring", stiffness: 260, damping: 24 }}
+        className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 pt-2"
+      >
         {/* Left Side: Search & Filter Tabs */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
           <div className="relative">
@@ -129,20 +289,27 @@ export default function ProjectsPage() {
           </div>
 
           {/* Filter Segmented Control */}
-          <div className="flex items-center bg-muted/60 p-1 rounded-lg border border-border text-xs sm:text-sm font-medium">
-            {["All", "Active", "Completed", "Paused"].map((tab) => (
+          <div className="relative flex items-center bg-muted/60 p-1 rounded-lg border border-border text-xs sm:text-sm font-medium">
+            {(["All", "Active", "Completed", "Paused", "Archived"] as ProjectFilter[]).map((tab) => (
               <Button
                 key={tab}
                 size="sm"
                 variant={filter === tab ? "default" : "ghost"}
                 onClick={() => setFilter(tab)}
-                className={`px-3 py-1.5 rounded-md transition-all cursor-pointer ${
+                className={`relative px-3 py-1.5 rounded-md transition-colors cursor-pointer ${
                   filter === tab
-                    ? "bg-card text-foreground shadow-sm font-semibold"
+                    ? "font-semibold"
                     : "text-muted-foreground hover:text-foreground"
                 }`}
               >
-                {tab}
+                {filter === tab && (
+                  <motion.span
+                    layoutId="project-filter-pill"
+                    transition={{ type: "spring", stiffness: 400, damping: 34 }}
+                    className="absolute inset-0 rounded-md bg-primary shadow-sm border border-primary/40"
+                  />
+                )}
+                <span className="relative z-10">{tab}</span>
               </Button>
             ))}
           </div>
@@ -150,7 +317,7 @@ export default function ProjectsPage() {
 
         {/* Right Side: Sorting & Layout Toggle */}
         <div className="flex items-center justify-between sm:justify-end gap-3">
-          {/* --- 1. Sort dropdown --- */}
+          {/* --- Sort dropdown --- */}
           <div className="relative flex items-center gap-2 text-sm text-muted-foreground">
             <span>Sort by:</span>
             <Button
@@ -160,40 +327,56 @@ export default function ProjectsPage() {
               className="flex items-center gap-1.5 font-medium text-foreground bg-card px-3 py-1.5 shadow-none cursor-pointer"
             >
               {sortLabels[sortOption]}
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              <motion.span
+                animate={{ rotate: sortOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                className="flex"
+              >
+                <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+              </motion.span>
             </Button>
 
-            {sortOpen && (
-              <>
-                {/* Backdrop to close on outside click */}
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setSortOpen(false)}
-                />
-                <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px]">
-                  {(["modified", "name", "progress"] as const).map((opt) => (
-                    <button
-                      key={opt}
-                      onClick={() => {
-                        setSortOption(opt);
-                        setSortOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer ${
-                        sortOption === opt
-                          ? "font-semibold text-foreground bg-muted/50"
-                          : "text-muted-foreground"
-                      }`}
-                    >
-                      {sortLabels[opt]}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
+            <AnimatePresence>
+              {sortOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setSortOpen(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.96 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px] origin-top-right"
+                  >
+                    {(["modified", "name", "progress"] as const).map((opt) => (
+                      <button
+                        key={opt}
+                        onClick={() => {
+                          setSortOption(opt);
+                          setSortOpen(false);
+                        }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer ${
+                          sortOption === opt
+                            ? "font-semibold text-foreground bg-muted/50"
+                            : "text-muted-foreground"
+                        }`}
+                      >
+                        {sortLabels[opt]}
+                      </button>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* View mode toggle */}
-          <div className="flex items-center border border-border rounded-lg p-0.5 bg-card">
+          <motion.div
+            layout
+            className="flex items-center border border-border rounded-lg p-0.5 bg-card"
+          >
             <Button
               size="sm"
               variant="ghost"
@@ -218,27 +401,33 @@ export default function ProjectsPage() {
             >
               <List className="w-4 h-4" />
             </Button>
-          </div>
+          </motion.div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Projects Grid / List Area */}
-      <div
+      <motion.div
+        variants={{ hidden: {}, show: { transition: { staggerChildren: 0.05 } } }}
         className={
           viewMode === "grid"
             ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
             : "flex flex-col gap-3"
         }
       >
-        {/* --- 3. Empty state --- */}
+        {/* --- Empty state --- */}
         {filteredProjects.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+          <motion.div
+            variants={cardItem}
+            className="col-span-full flex flex-col items-center justify-center py-20 text-center"
+          >
             <Search className="w-10 h-10 text-muted-foreground mb-4" />
             <h3 className="text-lg font-semibold text-foreground">
-              No projects found
+              {filter === "Archived" ? "No archived projects" : "No projects found"}
             </h3>
             <p className="text-sm text-muted-foreground mt-1 mb-4">
-              Try adjusting your search or filters.
+              {filter === "Archived"
+                ? "Archive a project to keep it here until you restore or delete it."
+                : "Try adjusting your search or filters."}
             </p>
             <Button
               variant="outline"
@@ -251,24 +440,100 @@ export default function ProjectsPage() {
             >
               Clear filters
             </Button>
-          </div>
+          </motion.div>
         )}
 
         {filteredProjects.map((project) => {
           const IconComponent = project.icon;
 
           /* -------------------------------------------------------------- */
-          /*  2. List view – horizontal single-row layout                   */
+          /*  Archived view – restore/delete rows, no link to detail page   */
+          /* -------------------------------------------------------------- */
+          if (filter === "Archived") {
+            return (
+              <motion.div
+                key={project.id}
+                layout
+                variants={cardItem}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              >
+                <Card
+                className={`bg-card border-border shadow-sm border-l-4 ${project.borderColor} transition-all hover:shadow-md relative overflow-hidden h-full`}
+              >
+                <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
+                  <div>
+                    <div className="flex items-start justify-between">
+                      <div className={`p-2.5 rounded-lg ${project.iconBg}`}>
+                        <IconComponent className="w-5 h-5" />
+                      </div>
+                      <Badge
+                        variant="secondary"
+                        className={`text-xs font-medium px-2 py-0.5 shadow-none border-none ${project.statusColor}`}
+                      >
+                        {project.status}
+                      </Badge>
+                    </div>
+                    <h3 className="text-base font-semibold text-foreground mt-3.5 tracking-tight">
+                      {project.title}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-muted-foreground mt-1 line-clamp-2 leading-relaxed">
+                      {project.description}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 pt-1">
+                    <div className="flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{project.date}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 flex-1 cursor-pointer"
+                      onClick={() => handleRestore(project.id)}
+                    >
+                      <Undo2 className="w-3.5 h-3.5" />
+                      Restore
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 flex-1 text-rose-600 hover:text-rose-600 cursor-pointer"
+                      onClick={() => handleArchiveDelete(project.id)}
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      Delete
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+              </motion.div>
+            );
+          }
+
+          /* -------------------------------------------------------------- */
+          /*  List view – horizontal single-row layout                      */
           /* -------------------------------------------------------------- */
           if (viewMode === "list") {
             return (
+              <motion.div
+                key={project.id}
+                layout
+                variants={cardItem}
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              >
               <Link
                 key={project.id}
                 href={`/dashboard/projects/${project.id}`}
-                className="block"
+                className="block h-full"
               >
                 <Card
-                  className={`bg-card border-border shadow-sm border-l-4 ${project.borderColor} transition-all hover:shadow-md relative overflow-hidden`}
+                  className={`bg-card border-border shadow-sm border-l-4 ${project.borderColor} transition-all hover:shadow-md relative overflow-hidden h-full`}
                 >
                   <CardContent className="p-4 flex items-center gap-4">
                     {/* Icon */}
@@ -311,7 +576,7 @@ export default function ProjectsPage() {
                       <span>{project.date}</span>
                     </div>
 
-                    {/* --- 4. MoreVertical menu (list) --- */}
+                    {/* MoreVertical menu (list) */}
                     <div className="relative shrink-0">
                       <Button
                         type="button"
@@ -329,36 +594,17 @@ export default function ProjectsPage() {
                         <MoreVertical className="w-4 h-4" />
                       </Button>
                       {menuOpenId === project.id && (
-                        <>
-                          <div
-                            className="fixed inset-0 z-40"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setMenuOpenId(null);
-                            }}
-                          />
-                          <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
-                            {["Edit", "Archive", "Delete"].map((action) => (
-                              <button
-                                key={action}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setMenuOpenId(null);
-                                }}
-                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-                              >
-                                {action}
-                              </button>
-                            ))}
-                          </div>
-                        </>
+                        <ProjectActionMenu
+                          onAction={(action) =>
+                            handleMenuAction(action, project.id)
+                          }
+                        />
                       )}
                     </div>
                   </CardContent>
                 </Card>
               </Link>
+              </motion.div>
             );
           }
 
@@ -366,14 +612,21 @@ export default function ProjectsPage() {
           /*  Grid view – original vertical card layout                     */
           /* -------------------------------------------------------------- */
           return (
-            <Link
+            <motion.div
               key={project.id}
-              href={`/dashboard/projects/${project.id}`}
-              className="block"
+              layout
+              variants={cardItem}
+              whileHover={{ y: -4 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
             >
-              <Card
-                className={`bg-card border-border shadow-sm border-l-4 ${project.borderColor} transition-all hover:shadow-md relative overflow-hidden`}
+              <Link
+                key={project.id}
+                href={`/dashboard/projects/${project.id}`}
+                className="block h-full"
               >
+                <Card
+                  className={`bg-card border-border shadow-sm border-l-4 ${project.borderColor} transition-all hover:shadow-md relative overflow-hidden h-full`}
+                >
                 <CardContent className="p-5 flex flex-col justify-between h-full space-y-4">
                   {/* Card Top Header */}
                   <div>
@@ -381,7 +634,7 @@ export default function ProjectsPage() {
                       <div className={`p-2.5 rounded-lg ${project.iconBg}`}>
                         <IconComponent className="w-5 h-5" />
                       </div>
-                      {/* --- 4. MoreVertical menu (grid) --- */}
+                      {/* MoreVertical menu (grid) */}
                       <div className="relative">
                         <Button
                           type="button"
@@ -399,31 +652,11 @@ export default function ProjectsPage() {
                           <MoreVertical className="w-4 h-4" />
                         </Button>
                         {menuOpenId === project.id && (
-                          <>
-                            <div
-                              className="fixed inset-0 z-40"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setMenuOpenId(null);
-                              }}
-                            />
-                            <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[120px]">
-                              {["Edit", "Archive", "Delete"].map((action) => (
-                                <button
-                                  key={action}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setMenuOpenId(null);
-                                  }}
-                                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
-                                >
-                                  {action}
-                                </button>
-                              ))}
-                            </div>
-                          </>
+                          <ProjectActionMenu
+                            onAction={(action) =>
+                              handleMenuAction(action, project.id)
+                            }
+                          />
                         )}
                       </div>
                     </div>
@@ -492,10 +725,68 @@ export default function ProjectsPage() {
                   </div>
                 </CardContent>
               </Card>
-            </Link>
+              </Link>
+              </motion.div>
           );
         })}
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+    </PageContainer>
+  );
+}
+
+/* === PROJECT ACTION MENU (Edit / Archive / Delete) === */
+function ProjectActionMenu({ onAction }: { onAction: (action: string) => void }) {
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-40"
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onAction("");
+        }}
+      />
+      <motion.div
+        initial={{ opacity: 0, y: -6, scale: 0.96 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.15 }}
+        className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[150px] origin-top-right"
+      >
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAction("Edit");
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-blue-600 hover:bg-muted transition-colors cursor-pointer"
+        >
+          <PencilLine className="w-3.5 h-3.5" />
+          Edit
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAction("Archive");
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted transition-colors cursor-pointer"
+        >
+          <Archive className="w-3.5 h-3.5" />
+          Archive
+        </button>
+        <button
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onAction("Delete");
+          }}
+          className="w-full flex items-center gap-2 px-3 py-2 text-sm text-rose-600 hover:bg-muted transition-colors cursor-pointer"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+          Delete
+        </button>
+      </motion.div>
+    </>
   );
 }

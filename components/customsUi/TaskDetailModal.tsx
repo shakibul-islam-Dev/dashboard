@@ -24,13 +24,41 @@ import { Input } from "@/components/ui/input";
 interface TaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
+  task?: {
+    id?: string;
+    title?: string;
+    status?: string;
+    project?: string;
+    assignee?: string;
+    dueDate?: string;
+    priority?: string;
+    tags?: string[];
+  };
 }
 
 export default function TaskDetailModal({
   isOpen,
   onClose,
+  task,
 }: TaskDetailModalProps) {
   const [comment, setComment] = useState("");
+
+  const code = task?.id ?? taskDetail.code;
+  const title = task?.title ?? taskDetail.title;
+  const status = task?.status ?? taskDetail.status;
+  const project = task?.project ?? taskDetail.project;
+  const dueDate = task?.dueDate ?? taskDetail.dueDate;
+  const priority = task?.priority ?? taskDetail.priority;
+  const tags = task?.tags && task.tags.length > 0 ? task.tags : taskDetail.tags;
+  const assigneeName = task?.assignee ?? taskDetail.assignee.name;
+  const assigneeInitials = task?.assignee
+    ? task.assignee
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : taskDetail.assignee.initials;
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -74,12 +102,12 @@ export default function TaskDetailModal({
         <div className="p-4 px-6 border-b border-border flex items-center justify-between bg-card">
           <div className="flex items-center gap-2.5">
             <span className="text-xs font-mono font-semibold bg-muted text-muted-foreground px-2 py-1 rounded">
-              {taskDetail.code}
+              {code}
             </span>
             {/* Replaced: raw <span> badge → <Badge variant="outline"> */}
             <Badge variant="outline" className="gap-1.5 px-2.5 py-1 text-xs font-medium bg-primary/10 text-primary border-primary/20">
               <span className="w-1.5 h-1.5 rounded-full bg-primary/100" />
-              {taskDetail.status}
+              {status}
             </Badge>
           </div>
 
@@ -105,7 +133,7 @@ export default function TaskDetailModal({
           {/* Title & Description */}
           <div>
             <h1 className="text-xl font-bold text-foreground leading-snug">
-              {taskDetail.title}
+              {title}
             </h1>
             <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
               {taskDetail.description}
@@ -123,11 +151,11 @@ export default function TaskDetailModal({
                 {/* Replaced: raw avatar <div> → <Avatar> / <AvatarFallback> */}
                 <Avatar className="w-6 h-6">
                   <AvatarFallback className="text-[10px] font-semibold bg-muted text-foreground">
-                    {taskDetail.assignee.initials}
+                    {assigneeInitials}
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-sm font-medium text-foreground">
-                  {taskDetail.assignee.name}
+                  {assigneeName}
                 </span>
               </div>
             </div>
@@ -140,7 +168,7 @@ export default function TaskDetailModal({
               <div className="flex items-center gap-2 text-foreground">
                 <Calendar className="w-4 h-4 text-muted-foreground" />
                 <span className="text-sm font-medium">
-                  {taskDetail.dueDate}
+                  {dueDate}
                 </span>
               </div>
             </div>
@@ -153,7 +181,7 @@ export default function TaskDetailModal({
               {/* Replaced: raw priority <span> badge → <Badge variant="destructive"> */}
               <Badge variant="destructive" className="gap-1.5 px-2.5 py-0.5 text-xs font-semibold">
                 <AlertCircle className="w-3 h-3" />
-                {taskDetail.priority}
+                {priority}
               </Badge>
             </div>
 
@@ -165,7 +193,7 @@ export default function TaskDetailModal({
               <div className="flex items-center gap-2 text-foreground">
                 <Folder className="w-4 h-4 text-primary" />
                 <span className="text-sm font-medium">
-                  {taskDetail.project}
+                  {project}
                 </span>
               </div>
             </div>
@@ -177,7 +205,7 @@ export default function TaskDetailModal({
               </span>
               <div className="flex flex-wrap items-center gap-2">
                 {/* Replaced: raw tag <span> pills → <Badge variant="outline"> */}
-                {taskDetail.tags.map((tag) => (
+                {tags.map((tag) => (
                   <Badge
                     key={tag}
                     variant="outline"
@@ -279,7 +307,7 @@ export default function TaskDetailModal({
             {/* Replaced: raw comment avatar <div> → <Avatar> / <AvatarFallback> */}
             <Avatar className="w-6 h-6 shrink-0">
               <AvatarFallback className="text-[10px] font-semibold bg-muted text-foreground">
-                {taskDetail.assignee.initials}
+                {assigneeInitials}
               </AvatarFallback>
             </Avatar>
             {/* Replaced: raw <input type="text"> → <Input> */}

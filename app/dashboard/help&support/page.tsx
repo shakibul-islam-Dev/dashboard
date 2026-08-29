@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import PathProvider from "@/components/customsUi/PathProvider";
 import {
   Search,
   BookOpen,
@@ -10,10 +9,13 @@ import {
   ChevronDown,
   X,
 } from "lucide-react";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { motion, AnimatePresence } from "motion/react";
+import { fadeUpStagger, fadeUp, dropDown, cardHover } from "@/lib/motion";
 
 interface FAQItem {
   question: string;
@@ -63,54 +65,67 @@ export default function HelpAndSupport() {
   };
 
   return (
-    <div className="min-h-screen bg-transparent p-4 sm:p-6 md:p-10 font-sans text-foreground">
-      <RouterNavigation />
-      <PathProvider />
+    <PageContainer>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={fadeUpStagger}
+        className="bg-transparent font-sans text-foreground"
+      >
+        <PageNav />
 
-      <div className="max-w-4xl mx-auto pt-4">
+        <div className="max-w-4xl mx-auto pt-4">
         {/* Top Header */}
-        <div className="text-center mb-8">
+        <motion.div variants={dropDown} className="text-center mb-8">
           <h1 className="text-2xl md:text-3xl font-bold text-foreground">
             Help & Support
           </h1>
           <p className="text-sm text-muted-foreground mt-2">
             Find answers and get help with TaskBoard.
           </p>
-        </div>
+        </motion.div>
 
         {/* Search Bar — wrapped in a shadcn Card */}
-        <Card className="mb-8">
-          <CardContent className="p-2">
-            <div className="flex items-center gap-3">
-              <div className="relative flex-1 flex items-center pl-3">
-                <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-                <Input
-                  type="text"
-                  placeholder="Search documentation, tutorials, and FAQs..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-0 pl-3 pr-8 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
-                />
-                {searchQuery && (
-                  <button
-                    onClick={() => setSearchQuery("")}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-muted transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5 text-muted-foreground" />
-                  </button>
-                )}
+        <motion.div variants={fadeUp}>
+          <Card className="mb-8">
+            <CardContent className="p-2">
+              <div className="flex items-center gap-3">
+                <div className="relative flex-1 flex items-center pl-3">
+                  <Search className="w-4 h-4 text-muted-foreground shrink-0" />
+                  <Input
+                    type="text"
+                    placeholder="Search documentation, tutorials, and FAQs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-transparent border-0 pl-3 pr-8 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:ring-0 focus-visible:ring-offset-0"
+                  />
+                  {searchQuery && (
+                    <motion.button
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded-sm hover:bg-muted transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5 text-muted-foreground" />
+                    </motion.button>
+                  )}
+                </div>
+                <Button className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium px-5 py-2 rounded-lg text-sm transition-colors shrink-0 shadow-xs">
+                  Search
+                </Button>
               </div>
-              <Button className="bg-primary hover:bg-primary-hover text-primary-foreground font-medium px-5 py-2 rounded-lg text-sm transition-colors shrink-0 shadow-xs">
-                Search
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </motion.div>
 
         {/* 3 Main Action Cards — each wrapped in a shadcn Card */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+        <motion.div
+          variants={fadeUpStagger}
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10"
+        >
           {/* Documentation Card */}
-          <Card className="relative overflow-hidden group hover:border-border transition-all">
+          <motion.div variants={fadeUp} {...cardHover}>
+            <Card className="relative overflow-hidden group hover:border-border transition-all h-full">
             <CardContent className="p-6">
               <div className="w-10 h-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center mb-4">
                 <BookOpen className="w-5 h-5" />
@@ -124,9 +139,11 @@ export default function HelpAndSupport() {
               </p>
             </CardContent>
           </Card>
+          </motion.div>
 
           {/* Frequently Asked Questions Card */}
-          <Card className="relative overflow-hidden group hover:border-border transition-all">
+          <motion.div variants={fadeUp} {...cardHover}>
+            <Card className="relative overflow-hidden group hover:border-border transition-all h-full">
             <CardContent className="p-6">
               <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4">
                 <HelpCircle className="w-5 h-5" />
@@ -140,9 +157,11 @@ export default function HelpAndSupport() {
               </p>
             </CardContent>
           </Card>
+          </motion.div>
 
           {/* Contact Support Card */}
-          <Card className="relative overflow-hidden group hover:border-border transition-all">
+          <motion.div variants={fadeUp} {...cardHover}>
+            <Card className="relative overflow-hidden group hover:border-border transition-all h-full">
             <CardContent className="p-6">
               <div className="w-10 h-10 rounded-lg bg-orange-50 text-orange-600 flex items-center justify-center mb-4">
                 <Headphones className="w-5 h-5" />
@@ -156,37 +175,64 @@ export default function HelpAndSupport() {
               </p>
             </CardContent>
           </Card>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* FAQ Section */}
-        <div>
+        <motion.div variants={fadeUp}>
           <h2 className="text-base font-semibold text-foreground mb-4">
             Frequently Asked Questions
           </h2>
 
           <div className="space-y-3">
             {filteredFaqs.map((faq, index) => (
-              <Card key={index} className="overflow-hidden transition-colors">
-                {/* FAQ toggle — uses shadcn Button with ghost variant */}
-                <Button
-                  variant="ghost"
-                  onClick={() => toggleFaq(index)}
-                  className="w-full p-4 flex items-center justify-between text-left text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-none"
-                >
-                  <span>{faq.question}</span>
-                  <ChevronDown
-                    className={`w-4 h-4 text-muted-foreground transition-transform duration-200 shrink-0 ml-2 ${
-                      openFaq === index ? "rotate-180 text-primary" : ""
-                    }`}
-                  />
-                </Button>
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  delay: 0.05 * index,
+                  type: "spring",
+                  stiffness: 260,
+                  damping: 24,
+                }}
+              >
+                <Card className="overflow-hidden transition-colors">
+                  {/* FAQ toggle — uses shadcn Button with ghost variant */}
+                  <Button
+                    variant="ghost"
+                    onClick={() => toggleFaq(index)}
+                    className="w-full p-4 flex items-center justify-between text-left text-sm font-medium text-foreground hover:bg-muted/50 transition-colors rounded-none"
+                  >
+                    <span>{faq.question}</span>
+                    <motion.span
+                      animate={{ rotate: openFaq === index ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex shrink-0 ml-2 ${
+                        openFaq === index ? "text-primary" : "text-muted-foreground"
+                      }`}
+                    >
+                      <ChevronDown className="w-4 h-4" />
+                    </motion.span>
+                  </Button>
 
-                {openFaq === index && (
-                  <CardContent className="px-4 pb-4 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border">
-                    {faq.answer}
-                  </CardContent>
-                )}
-              </Card>
+                  <AnimatePresence initial={false}>
+                    {openFaq === index && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <CardContent className="px-4 pb-4 pt-1 text-xs text-muted-foreground leading-relaxed border-t border-border">
+                          {faq.answer}
+                        </CardContent>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              </motion.div>
             ))}
             {filteredFaqs.length === 0 && (
               <p className="text-sm text-muted-foreground py-4 text-center">
@@ -194,8 +240,9 @@ export default function HelpAndSupport() {
               </p>
             )}
           </div>
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
+    </PageContainer>
   );
 }

@@ -1,17 +1,19 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import {
   CheckCircle2,
   UserPlus,
   History,
   AtSign,
   AlertTriangle,
+  CheckCheck,
+  Trash2,
+  Mail,
+  MailOpen,
 } from "lucide-react";
-import {
-  dropdownNotifications as initialData,
-  type DropdownNotification,
-} from "@/data/notifications";
+import { type DropdownNotification } from "@/data/notifications";
+import { useNotifications } from "@/lib/notificationsStore";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
@@ -28,8 +30,13 @@ export default function NotificationsModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
-  const [notifications, setNotifications] =
-    useState<DropdownNotification[]>(initialData);
+  const {
+    notifications,
+    markRead,
+    markAllRead,
+    removeNotification,
+    unreadCount,
+  } = useNotifications();
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -52,16 +59,9 @@ export default function NotificationsModal({
 
   if (!isOpen) return null;
 
-  // Mark all notifications as read
-  const markAllAsRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, unread: false })));
-  };
-
   // Mark a single notification as read and close modal
   const handleNotificationClick = (id: string) => {
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, unread: false } : n)),
-    );
+    markRead(id);
     onClose();
   };
 
@@ -83,10 +83,12 @@ export default function NotificationsModal({
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <h2 className="text-base font-bold text-foreground">Notifications</h2>
-          {/* Mark all notifications as read */}
-          <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-            Mark all as read
-          </Button>
+          {unreadCount > 0 && (
+            <Button variant="ghost" size="sm" onClick={markAllRead}>
+              <CheckCheck className="w-4 h-4 mr-1.5" />
+              Mark all as read
+            </Button>
+          )}
         </div>
 
         {/* Scrollable Content */}
@@ -99,65 +101,13 @@ export default function NotificationsModal({
               </div>
               <div>
                 {todayNotifications.map((notification) => (
-                  <div
+                  <NotificationRow
                     key={notification.id}
-                    onClick={() => handleNotificationClick(notification.id)}
-                    className={`relative flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors ${
-                      notification.unread
-                        ? "bg-primary/20"
-                        : "hover:bg-muted/50"
-                    }`}
-                  >
-                    {/* Unread Active Blue Indicator Bar & Dot */}
-                    {notification.unread && (
-                      <>
-                        <div className="absolute left-0 top-0 bottom-0 w-0.75 bg-primary rounded-r" />
-                        <span className="w-1.5 h-1.5 rounded-full bg-primary absolute left-2.5 top-6" />
-                      </>
-                    )}
-
-                    {/* Avatar with Status Icon Badge */}
-                    <div className="relative shrink-0 ml-2">
-                      {notification.avatar ? (
-                        <Avatar className="w-9 h-9">
-                          <AvatarImage src={notification.avatar} alt={notification.actor ?? ""} />
-                          <AvatarFallback>{notification.actor?.charAt(0) ?? "?"}</AvatarFallback>
-                        </Avatar>
-                      ) : (
-                        <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground border border-border">
-                          {notification.actor?.charAt(0) ?? "?"}
-                        </div>
-                      )}
-                      {notification.type === "completed" && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white ring-2 ring-card">
-                          <CheckCircle2 className="w-3 h-3" />
-                        </div>
-                      )}
-                      {notification.type === "assigned" && (
-                        <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-white ring-2 ring-card">
-                          <UserPlus className="w-2.5 h-2.5" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Notification Details */}
-                    <div className="flex-1 min-w-0 pr-1">
-                      <p className="text-xs text-foreground leading-snug">
-                        <strong className="font-semibold text-foreground">
-                          {notification.actor}{" "}
-                        </strong>
-                        {notification.title}{" "}
-                        {notification.target && (
-                          <span className="font-semibold text-foreground">
-                            {notification.target}
-                          </span>
-                        )}
-                      </p>
-                      <span className="text-[11px] font-mono text-muted-foreground mt-1 block">
-                        {notification.time}
-                      </span>
-                    </div>
-                  </div>
+                    notification={notification}
+                    onRead={markRead}
+                    onDelete={removeNotification}
+                    onClick={(id) => handleNotificationClick(id)}
+                  />
                 ))}
               </div>
             </div>
@@ -171,42 +121,27 @@ export default function NotificationsModal({
               </div>
               <div className="divide-y divide-border/60">
                 {earlierNotifications.map((notification) => (
-                  <div
+                  <NotificationRow
                     key={notification.id}
-                    onClick={() => handleNotificationClick(notification.id)}
-                    className="flex items-start gap-3.5 px-5 py-3.5 hover:bg-muted/50 cursor-pointer transition-colors"
-                  >
-                    {/* Icon Category Badges */}
-                    <div className="shrink-0">
-                      {notification.type === "updated" && (
-                        <div className="w-9 h-9 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
-                          <History className="w-4 h-4" />
-                        </div>
-                      )}
-                      {notification.type === "mentioned" && (
-                        <div className="w-9 h-9 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
-                          <AtSign className="w-4 h-4" />
-                        </div>
-                      )}
-                      {notification.type === "warning" && (
-                        <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center">
-                          <AlertTriangle className="w-4 h-4" />
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Detail Text */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs text-foreground leading-snug">
-                        {notification.title}
-                      </p>
-                      <span className="text-[11px] font-mono text-muted-foreground mt-1 block">
-                        {notification.time}
-                      </span>
-                    </div>
-                  </div>
+                    notification={notification}
+                    onRead={markRead}
+                    onDelete={removeNotification}
+                    onClick={(id) => handleNotificationClick(id)}
+                  />
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Empty state */}
+          {notifications.length === 0 && (
+            <div className="px-5 py-12 text-center">
+              <p className="text-sm font-medium text-foreground">
+                You&apos;re all caught up
+              </p>
+              <p className="text-xs text-muted-foreground mt-1">
+                No notifications right now.
+              </p>
             </div>
           )}
         </div>
@@ -228,4 +163,140 @@ export default function NotificationsModal({
       </div>
     </div>
   );
+}
+
+/* === Single notification row (shared by the dropdown + full page) === */
+function NotificationRow({
+  notification,
+  onRead,
+  onDelete,
+  onClick,
+}: {
+  notification: DropdownNotification;
+  onRead: (id: string) => void;
+  onDelete: (id: string) => void;
+  onClick: (id: string) => void;
+}) {
+  return (
+    <div
+      onClick={() => onClick(notification.id)}
+      className={`group relative flex items-start gap-3 px-5 py-3.5 cursor-pointer transition-colors ${
+        notification.unread ? "bg-primary/20" : "hover:bg-muted/50"
+      }`}
+    >
+      {/* Unread Active Blue Indicator Bar & Dot */}
+      {notification.unread && (
+        <>
+          <div className="absolute left-0 top-0 bottom-0 w-0.75 bg-primary rounded-r" />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary absolute left-2.5 top-6" />
+        </>
+      )}
+
+      {/* Avatar with Status Icon Badge */}
+      <div className="relative shrink-0 ml-2">
+        {notification.avatar ? (
+          <Avatar className="w-9 h-9">
+            <AvatarImage
+              src={notification.avatar}
+              alt={notification.actor ?? ""}
+            />
+            <AvatarFallback>
+              {notification.actor?.charAt(0) ?? "?"}
+            </AvatarFallback>
+          </Avatar>
+        ) : (
+          <div className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground border border-border">
+            {notification.actor?.charAt(0) ?? "?"}
+          </div>
+        )}
+        {notification.type === "completed" && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-emerald-500 rounded-full flex items-center justify-center text-white ring-2 ring-card">
+            <CheckCircle2 className="w-3 h-3" />
+          </div>
+        )}
+        {notification.type === "assigned" && (
+          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-primary rounded-full flex items-center justify-center text-white ring-2 ring-card">
+            <UserPlus className="w-2.5 h-2.5" />
+          </div>
+        )}
+      </div>
+
+      {/* Notification Details */}
+      <div className="flex-1 min-w-0 pr-1">
+        <p className="text-xs text-foreground leading-snug">
+          <strong className="font-semibold text-foreground">
+            {notification.actor}{" "}
+          </strong>
+          {notification.title}{" "}
+          {notification.target && (
+            <span className="font-semibold text-foreground">
+              {notification.target}
+            </span>
+          )}
+        </p>
+        <span className="text-[11px] font-mono text-muted-foreground mt-1 block">
+          {notification.time}
+        </span>
+      </div>
+
+      {/* Hover Quick Actions */}
+      <div
+        className="hidden group-hover:flex items-center gap-0.5 shrink-0 text-muted-foreground"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-7 h-7"
+          title={notification.unread ? "Mark as read" : "Mark as unread"}
+          onClick={() => onRead(notification.id)}
+        >
+          {notification.unread ? (
+            <MailOpen className="w-3.5 h-3.5" />
+          ) : (
+            <Mail className="w-3.5 h-3.5" />
+          )}
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="w-7 h-7 text-rose-600 hover:text-rose-600"
+          title="Delete"
+          onClick={() => onDelete(notification.id)}
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* === Icon badge helper for "Earlier" category notifications === */
+export function NotificationTypeIcon({
+  type,
+}: {
+  type: DropdownNotification["type"];
+}) {
+  if (type === "updated") {
+    return (
+      <div className="w-9 h-9 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+        <History className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (type === "mentioned") {
+    return (
+      <div className="w-9 h-9 rounded-xl bg-muted text-muted-foreground flex items-center justify-center">
+        <AtSign className="w-4 h-4" />
+      </div>
+    );
+  }
+  if (type === "warning") {
+    return (
+      <div className="w-9 h-9 rounded-xl bg-amber-50 text-amber-500 border border-amber-100 flex items-center justify-center">
+        <AlertTriangle className="w-4 h-4" />
+      </div>
+    );
+  }
+  return null;
 }

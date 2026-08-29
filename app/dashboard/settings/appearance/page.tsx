@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import PathProvider from "@/components/customsUi/PathProvider";
 import { Check, Monitor, Moon, Sun } from "lucide-react";
 import {
   useTheme,
@@ -86,11 +85,8 @@ export default function AppearanceSettingsPage() {
   const { theme, resolvedTheme, setTheme } = useTheme();
 
   return (
-    <div className="min-h-screen bg-transparent p-4 sm:p-6 md:p-10 font-sans text-foreground">
-      <PathProvider />
-
-      <div className="max-w-4xl mt-2">
-        {/* Header */}
+    <div className="mt-2">
+      {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-foreground">
             Appearance
@@ -188,6 +184,5 @@ export default function AppearanceSettingsPage() {
           </CardContent>
         </Card>
       </div>
-    </div>
   );
 }

@@ -2,17 +2,16 @@
 
 import React from "react";
 import { ArrowLeft } from "lucide-react";
-import PathProvider from "@/components/customsUi/PathProvider";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
 const TaskDetailsPage = () => {
   return (
-    <div className="min-h-screen bg-transparent p-4 sm:p-6 md:p-10 font-sans text-foreground">
-      <RouterNavigation />
-      <PathProvider />
+    <PageContainer>
+      <PageNav />
 
       {/* Header with back navigation */}
       <div className="mb-6">
@@ -79,7 +78,7 @@ const TaskDetailsPage = () => {
           </Card>
         </div>
       </div>
-    </div>
+    </PageContainer>
   );
 };
 

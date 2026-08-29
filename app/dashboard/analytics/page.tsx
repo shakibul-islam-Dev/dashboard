@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import PathProvider from "@/components/customsUi/PathProvider";
 import { Calendar, ChevronDown } from "lucide-react";
 import {
   AreaChart,
@@ -24,7 +23,10 @@ import {
   projectProgressData,
   analyticsMetrics,
 } from "@/data/analytics";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
+import { motion, AnimatePresence } from "motion/react";
+import { fadeUpStagger, fadeUp, dropDown, popIn, cardHover } from "@/lib/motion";
 
 /* ── shadcn UI components ─────────────────────────────────────── */
 import { Button } from "@/components/ui/button";
@@ -43,12 +45,20 @@ const AnalyticsPages = () => {
   const [showDateDropdown, setShowDateDropdown] = useState(false);
 
   return (
-    <div className="min-h-screen bg-transparent p-4 sm:p-6 md:p-8 font-sans text-foreground">
-      <RouterNavigation />
-      <PathProvider />
+    <PageContainer>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={fadeUpStagger}
+        className="bg-transparent font-sans text-foreground"
+      >
+        <PageNav />
 
-      {/* ── Header ─────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        {/* ── Header ─────────────────────────────────────────────── */}
+      <motion.div
+        variants={dropDown}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6"
+      >
         <div>
           <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
@@ -64,63 +74,83 @@ const AnalyticsPages = () => {
           >
             <Calendar className="w-4 h-4 text-muted-foreground" />
             <span>{dateRange}</span>
-            <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+            <motion.span
+              animate={{ rotate: showDateDropdown ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex"
+            >
+              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+            </motion.span>
           </Button>
-          {showDateDropdown && (
-            <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-md py-1 min-w-[160px]">
-              {(["Last 7 Days", "Last 30 Days", "Last 90 Days"] as DateRangeOption[]).map(
-                (option) => (
-                  <button
-                    key={option}
-                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
-                      dateRange === option
-                        ? "text-primary font-medium"
-                        : "text-foreground"
-                    }`}
-                    onClick={() => {
-                      setDateRange(option);
-                      setShowDateDropdown(false);
-                    }}
-                  >
-                    {option}
-                  </button>
-                )
-              )}
-            </div>
-          )}
+          <AnimatePresence>
+            {showDateDropdown && (
+              <motion.div
+                variants={popIn}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-md py-1 min-w-[160px] origin-top-right"
+              >
+                {(["Last 7 Days", "Last 30 Days", "Last 90 Days"] as DateRangeOption[]).map(
+                  (option) => (
+                    <button
+                      key={option}
+                      className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
+                        dateRange === option
+                          ? "text-primary font-medium"
+                          : "text-foreground"
+                      }`}
+                      onClick={() => {
+                        setDateRange(option);
+                        setShowDateDropdown(false);
+                      }}
+                    >
+                      {option}
+                    </button>
+                  )
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       {/* ── Metric Cards ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <motion.div
+        variants={fadeUpStagger}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6"
+      >
         {analyticsMetrics.map((metric) => (
           /* shadcn Card for each metric */
-          <Card key={metric.label}>
-            <CardContent>
-              <div className="flex items-center justify-between text-muted-foreground text-sm font-medium mb-3">
-                <span>{metric.label}</span>
-                <metric.icon className="w-4 h-4 text-muted-foreground" />
-              </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl font-bold text-foreground">
-                  {metric.value}
-                </span>
-                <span className="text-xs font-medium text-emerald-600 font-mono">
-                  {metric.delta}
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div key={metric.label} variants={fadeUp} {...cardHover}>
+            <Card className="h-full">
+              <CardContent>
+                <div className="flex items-center justify-between text-muted-foreground text-sm font-medium mb-3">
+                  <span>{metric.label}</span>
+                  <metric.icon className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-foreground">
+                    {metric.value}
+                  </span>
+                  <span className="text-xs font-medium text-emerald-600 font-mono">
+                    {metric.delta}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* ── Grid 2×2 for Visual Analytics ─────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <motion.div variants={fadeUpStagger} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* ── Chart 1: Task Completion Trend (shadcn Card) ──── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Task Completion Trend</CardTitle>
-          </CardHeader>
+        <motion.div variants={fadeUp} {...cardHover}>
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Task Completion Trend</CardTitle>
+            </CardHeader>
           <CardContent className="flex flex-col justify-between">
             <div className="h-56 sm:h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -185,12 +215,14 @@ const AnalyticsPages = () => {
             </div>
           </CardContent>
         </Card>
+        </motion.div>
 
         {/* ── Chart 2: Tasks by Status (shadcn Card) ────────── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Tasks by Status</CardTitle>
-          </CardHeader>
+        <motion.div variants={fadeUp} {...cardHover}>
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Tasks by Status</CardTitle>
+            </CardHeader>
           <CardContent>
             <div className="w-full">
               {/* Chart Area */}
@@ -242,13 +274,15 @@ const AnalyticsPages = () => {
               </div>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </motion.div>
 
         {/* ── Chart 3: Priority Distribution (shadcn Card) ──── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Priority Distribution</CardTitle>
-          </CardHeader>
+        <motion.div variants={fadeUp} {...cardHover}>
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Priority Distribution</CardTitle>
+            </CardHeader>
           <CardContent>
             <div className="h-56 sm:h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -283,13 +317,15 @@ const AnalyticsPages = () => {
               </ResponsiveContainer>
             </div>
           </CardContent>
-        </Card>
+          </Card>
+        </motion.div>
 
         {/* ── Chart 4: Project Progress (shadcn Card + Progress) ── */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Progress</CardTitle>
-          </CardHeader>
+        <motion.div variants={fadeUp} {...cardHover}>
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Project Progress</CardTitle>
+            </CardHeader>
           <CardContent className="flex flex-col justify-between my-auto">
             <div className="space-y-6">
               {projectProgressData.map((item) => (
@@ -306,9 +342,11 @@ const AnalyticsPages = () => {
               ))}
             </div>
           </CardContent>
-        </Card>
-      </div>
-    </div>
+          </Card>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+    </PageContainer>
   );
 };
 

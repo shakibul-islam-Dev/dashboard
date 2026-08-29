@@ -1,5 +1,6 @@
 "use client";
-import PathProvider from "@/components/customsUi/PathProvider";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import CreateProjectModal from "@/components/customsUi/CreateProjectModal";
 
 import React from "react";
@@ -18,6 +19,7 @@ import {
   GripVertical,
 } from "lucide-react";
 import { projectBoardData, type BoardProject } from "@/data/projects";
+import { sortBoardProjects } from "@/lib/projectFilters";
 
 // shadcn UI Components
 import { Button } from "@/components/ui/button";
@@ -27,22 +29,13 @@ import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 // ── Column sort / collapse definitions ────────────────────────────────────────
-const COLUMN_KEYS = ["overdue", "running", "upcoming", "newProjects"] as const;
-type ColumnKey = (typeof COLUMN_KEYS)[number];
+type ColumnKey = "overdue" | "running" | "upcoming" | "newProjects";
 
 const SORT_OPTIONS = [
   { label: "Sort by Priority", value: "priority" },
   { label: "Sort by Due Date", value: "dueDate" },
   { label: "Collapse Column", value: "collapse" },
 ] as const;
-
-// ── Priority weight helper (used for sorting) ─────────────────────────────────
-const PRIORITY_WEIGHT: Record<string, number> = {
-  Urgent: 0,
-  High: 1,
-  Medium: 2,
-  Normal: 3,
-};
 
 // ══════════════════════════════════════════════════════════════════════════════
 // MAIN PAGE COMPONENT
@@ -111,25 +104,6 @@ export default function ProjectBoard() {
     setActiveMenuColumn(null);
   }
 
-  // ── Sort helper ────────────────────────────────────────────────────────────
-  function sortProjects(
-    list: BoardProject[],
-    sortBy: "priority" | "dueDate" | null
-  ): BoardProject[] {
-    if (!sortBy) return list;
-    const sorted = [...list];
-    if (sortBy === "priority") {
-      sorted.sort(
-        (a, b) =>
-          (PRIORITY_WEIGHT[a.priority] ?? 99) -
-          (PRIORITY_WEIGHT[b.priority] ?? 99)
-      );
-    } else if (sortBy === "dueDate") {
-      sorted.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
-    }
-    return sorted;
-  }
-
   // ── Is column collapsed helper ─────────────────────────────────────────────
   function isCollapsed(key: string) {
     return collapsedColumns.has(key);
@@ -176,9 +150,9 @@ export default function ProjectBoard() {
   ];
 
   return (
-    <div className="w-full min-h-screen bg-transparent p-6 sm:p-8 font-sans text-foreground">
+    <PageContainer>
       {/* ── Header Section ──────────────────────────────────────────────────── */}
-      <PathProvider />
+      <PageNav />
       <div className="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-foreground tracking-tight">
@@ -299,7 +273,7 @@ export default function ProjectBoard() {
             onMenuAction={(action) => handleColumnMenuAction(col.key, action)}
             onExpand={() => toggleCollapse(col.key)}
           >
-            {sortProjects(col.data, columnSorts[col.key]).map((project) => (
+            {sortBoardProjects(col.data, columnSorts[col.key]).map((project) => (
               <ProjectCard
                 key={project.id}
                 project={project}
@@ -309,7 +283,7 @@ export default function ProjectBoard() {
           </BoardColumn>
         ))}
       </div>
-    </div>
+    </PageContainer>
   );
 }
 

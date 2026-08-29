@@ -8,7 +8,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import PathProvider from "@/components/customsUi/PathProvider";
 import Link from "next/link";
 import { dashboardProjects as initialDashboardProjects } from "@/data/projects";
 import {
@@ -17,7 +16,8 @@ import {
 } from "@/lib/customStore";
 import { dashboardStats } from "@/data/analytics";
 import { recentActivityData } from "@/data/activity";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import LoadingSkeletonDashboard from "@/components/customsUi/LoadingSkeletonDashboard";
 import DashboardErrorCard from "@/components/customsUi/DashboardErrorCard";
 import { motion } from "motion/react";
@@ -48,19 +48,16 @@ export default function DashboardHome() {
   if (loading) return <LoadingSkeletonDashboard />;
   if (error) {
     return (
-      <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 w-full max-w-7xl mx-auto">
-        <RouterNavigation />
-        <PathProvider />
+      <PageContainer className="flex flex-col gap-4 sm:gap-6">
         <DashboardErrorCard onRetry={() => setError(false)} />
-      </div>
+      </PageContainer>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6 p-3 sm:p-6 w-full max-w-7xl mx-auto">
+    <PageContainer className="flex flex-col gap-4 sm:gap-6">
       {/* Top Header Section */}
-      <RouterNavigation />
-      <PathProvider />
+      <PageNav />
       <Card className="border-border shadow-sm">
         <CardContent className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-6">
           <div>
@@ -265,6 +262,6 @@ export default function DashboardHome() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </PageContainer>
   );
 }

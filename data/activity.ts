@@ -8,6 +8,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+export type ActivityItemType = "task" | "project" | "team" | "comment";
+
 export interface ActivityItem {
   id: string;
   user: {
@@ -21,6 +23,7 @@ export interface ActivityItem {
   comment?: string;
   icon: LucideIcon;
   iconBg: string;
+  type: ActivityItemType;
 }
 
 export interface ActivityGroup {
@@ -49,6 +52,7 @@ export const activityData: ActivityGroup[] = [
         project: "Website Redesign",
         icon: Check,
         iconBg: "bg-emerald-500",
+        type: "task",
       },
       {
         id: "2",
@@ -58,6 +62,30 @@ export const activityData: ActivityGroup[] = [
         project: "Authentication System",
         icon: ArrowRight,
         iconBg: "bg-amber-500",
+        type: "task",
+      },
+      {
+        id: "7",
+        user: { name: "Shakibul Islam", initials: "SI" },
+        action: "created project",
+        target: '"OAuth2 Provider Setup"',
+        time: "5 hours ago",
+        project: "OAuth2 Provider Setup",
+        icon: Plus,
+        iconBg: "bg-indigo-500",
+        type: "project",
+      },
+      {
+        id: "8",
+        user: { name: "Elena Rostova", initials: "ER" },
+        action: 'commented on "Trending Score Model"',
+        time: "6 hours ago",
+        project: "Idea Vault Analytics Engine",
+        comment:
+          '"The decay factor looks good at 0.96 — can we backfill the last 30 days before we ship digests?"',
+        icon: MessageSquare,
+        iconBg: "bg-emerald-600",
+        type: "comment",
       },
     ],
   },
@@ -73,6 +101,7 @@ export const activityData: ActivityGroup[] = [
         project: "Mobile App",
         icon: Plus,
         iconBg: "bg-blue-600",
+        type: "task",
       },
       {
         id: "4",
@@ -82,6 +111,28 @@ export const activityData: ActivityGroup[] = [
         project: "Mobile App",
         icon: UserPlus,
         iconBg: "bg-slate-700",
+        type: "team",
+      },
+      {
+        id: "9",
+        user: { name: "Michael Chen", initials: "MC" },
+        action: "pushed 4 commits to",
+        target: "feature/stripe-reconciliation",
+        time: "Yesterday",
+        project: "Payment Integration",
+        icon: ArrowRight,
+        iconBg: "bg-rose-500",
+        type: "task",
+      },
+      {
+        id: "10",
+        user: { name: "Jessica T.", initials: "JT" },
+        action: 'updated description for "Dashboard Redesign"',
+        time: "Yesterday",
+        project: "Dashboard Redesign",
+        icon: Pencil,
+        iconBg: "bg-emerald-500",
+        type: "project",
       },
     ],
   },
@@ -96,6 +147,7 @@ export const activityData: ActivityGroup[] = [
         project: null,
         icon: Pencil,
         iconBg: "bg-slate-600",
+        type: "project",
       },
       {
         id: "6",
@@ -107,6 +159,7 @@ export const activityData: ActivityGroup[] = [
           '"I\'ve pushed the latest endpoints to staging. The documentation is updated in the wiki."',
         icon: MessageSquare,
         iconBg: "bg-blue-600",
+        type: "comment",
       },
     ],
   },

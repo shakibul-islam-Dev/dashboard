@@ -1,10 +1,10 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import PathProvider from "@/components/customsUi/PathProvider";
 import { UserPlus, SlidersHorizontal, MoreHorizontal, Search } from "lucide-react";
 import { teamMembers, teamMetrics, type TeamMember } from "@/data/team";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import { toast } from "sonner";
 import {
   Table,
@@ -20,6 +20,9 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { motion } from "motion/react";
+import { fadeUpStagger, fadeUp, dropDown, cardHover } from "@/lib/motion";
+import { filterTeamMembers } from "@/lib/teamFilters";
 
 // ── Constants ──────────────────────────────────────────────────────────────
 const ITEMS_PER_PAGE = 4;
@@ -36,23 +39,10 @@ export default function TeamsPages() {
 
   // ── Filtered + Paginated Data ──────────────────────────────────────────
   // Apply search filter, then status filter, then paginate
-  const filteredMembers = useMemo(() => {
-    return teamMembers.filter((member) => {
-      // Search: match against name, email, or role
-      const query = searchQuery.toLowerCase();
-      const matchesSearch =
-        !query ||
-        member.name.toLowerCase().includes(query) ||
-        member.email.toLowerCase().includes(query) ||
-        member.role.toLowerCase().includes(query);
-
-      // Status filter: skip filter when "All" is selected
-      const matchesStatus =
-        statusFilter === "All" || member.status === statusFilter;
-
-      return matchesSearch && matchesStatus;
-    });
-  }, [searchQuery, statusFilter]);
+  const filteredMembers = useMemo(
+    () => filterTeamMembers(teamMembers, searchQuery, statusFilter),
+    [searchQuery, statusFilter],
+  );
 
   // Calculate pagination values from filtered results
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
@@ -85,12 +75,20 @@ export default function TeamsPages() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent p-6 md:p-8 font-sans text-foreground">
-      <RouterNavigation />
-      <PathProvider />
+    <PageContainer>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={fadeUpStagger}
+        className="bg-transparent font-sans text-foreground"
+      >
+        <PageNav />
 
-      {/* ── Header ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+        {/* ── Header ──────────────────────────────────────────────────────── */}
+      <motion.div
+        variants={dropDown}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6"
+      >
         <div>
           <h1 className="text-2xl font-bold text-foreground">Team</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -105,13 +103,17 @@ export default function TeamsPages() {
           <UserPlus className="w-4 h-4" />
           Invite Member
         </Button>
-      </div>
+      </motion.div>
 
       {/* ── Metrics Overview Cards ──────────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <motion.div
+        variants={fadeUpStagger}
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
+      >
         {teamMetrics.map((metric) => (
-          <Card key={metric.label}>
-            <CardContent className="p-5">
+          <motion.div key={metric.label} variants={fadeUp} {...cardHover}>
+            <Card className="h-full">
+              <CardContent className="p-5">
               <div className="flex items-center justify-between text-muted-foreground mb-2">
                 <span className="text-sm font-medium">{metric.label}</span>
                 <metric.icon className="w-4 h-4 text-muted-foreground" />
@@ -138,12 +140,14 @@ export default function TeamsPages() {
                 )}
               </div>
             </CardContent>
-          </Card>
+            </Card>
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* ── Team Directory Table ────────────────────────────────────────── */}
-      <Card>
+      <motion.div variants={fadeUp}>
+        <Card>
         <CardHeader className="p-5 flex flex-row items-center justify-between border-b border-border">
           <h2 className="text-base font-semibold text-foreground">
             Team Directory
@@ -178,10 +182,19 @@ export default function TeamsPages() {
               key={status}
               variant={statusFilter === status ? "default" : "outline"}
               size="sm"
-              className="h-7 text-xs"
+              className={`relative h-7 text-xs ${
+                statusFilter === status ? "" : "text-muted-foreground hover:text-foreground"
+              }`}
               onClick={() => handleStatusFilterChange(status)}
             >
-              {status}
+              {statusFilter === status && (
+                <motion.span
+                  layoutId="team-status-pill"
+                  transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                  className="absolute inset-0 rounded-md bg-primary"
+                />
+              )}
+              <span className="relative z-10">{status}</span>
             </Button>
           ))}
         </div>
@@ -333,7 +346,9 @@ export default function TeamsPages() {
           </div>
         </div>
       </Card>
-    </div>
+      </motion.div>
+    </motion.div>
+    </PageContainer>
   );
 }
 

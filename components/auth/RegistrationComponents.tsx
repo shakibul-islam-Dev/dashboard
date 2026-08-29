@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import { useForm, SubmitHandler } from "react-hook-form";
-import { registerUser, loginUser } from "@/lib/auth";
+import { registerUser, loginUser, demoLogin } from "@/lib/auth";
 
 type RegistrationInputs = {
   fullName: string;
@@ -32,6 +32,19 @@ const RegistrationComponents = () => {
     }
     loginUser(data.email, data.password);
     toast.success("Account created", {
+      description: "Welcome to Task Board!",
+    });
+    router.push("/dashboard");
+  };
+
+  const handleDemoLogin = async () => {
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    const result = demoLogin();
+    if (!result.ok) {
+      toast.error("Demo login failed", { description: result.error });
+      return;
+    }
+    toast.success("Demo login successful", {
       description: "Welcome to Task Board!",
     });
     router.push("/dashboard");
@@ -164,6 +177,20 @@ const RegistrationComponents = () => {
             </Link>
           </p>
         </section>
+
+        {/* Demo Login */}
+        <div className="mt-4 pt-4 border-t border-[#30363d]">
+          <p className="text-center text-xs text-[#8b949e] mb-3">
+            Skip the sign-up and explore instantly.
+          </p>
+          <button
+            type="button"
+            onClick={handleDemoLogin}
+            className="w-full rounded-lg border border-[#58a6ff]/40 bg-[#1f2937] py-2.5 text-sm font-medium text-[#58a6ff] transition-all duration-200 hover:bg-[#58a6ff]/10 active:scale-[0.98] cursor-pointer"
+          >
+            Continue with Demo Account
+          </button>
+        </div>
       </div>
     </div>
   );

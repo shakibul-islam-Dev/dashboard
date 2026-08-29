@@ -1,15 +1,18 @@
 "use client";
 
 import React, { useState, useMemo } from "react";
-import PathProvider from "@/components/customsUi/PathProvider";
 import { Calendar, ChevronDown } from "lucide-react";
 import { activityData, activityTabs } from "@/data/activity";
-import RouterNavigation from "@/components/customsUi/RouterNavigation";
+import PageContainer from "@/components/customsUi/PageContainer";
+import PageNav from "@/components/customsUi/PageNav";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "motion/react";
+import { fadeUpStagger, fadeUp, dropDown, popIn } from "@/lib/motion";
+import { filterActivityGroups } from "@/lib/activityFilters";
 
 type DateRange = "7d" | "30d" | "90d";
 
@@ -25,35 +28,34 @@ export default function ActivityPages() {
   const [showDateDropdown, setShowDateDropdown] = useState(false);
 
   // ── Tab filtering ──
-  const filteredActivity = useMemo(() => {
-    if (activeTab === "All Activity") return activityData;
-    return activityData.filter(
-      (group) =>
-        group.section.toLowerCase().includes(activeTab.toLowerCase()) ||
-        group.items.some(
-          (item) =>
-            item.action.toLowerCase().includes(activeTab.toLowerCase()) ||
-            (item.project &&
-              item.project.toLowerCase().includes(activeTab.toLowerCase()))
-        )
-    );
-  }, [activeTab]);
+  const filteredActivity = useMemo(
+    () => filterActivityGroups(activityData, activeTab),
+    [activeTab],
+  );
 
   return (
-    <div className="min-h-screen bg-transparent p-4 sm:p-6 md:p-10 font-sans text-foreground">
-      <RouterNavigation />
-      <PathProvider />
+    <PageContainer>
+      <motion.div
+        initial="hidden"
+        animate="show"
+        variants={fadeUpStagger}
+        className="bg-transparent font-sans text-foreground"
+      >
+        <PageNav />
 
-      {/* Header */}
-      <div className="mb-6">
+        {/* Header */}
+      <motion.div variants={dropDown} className="mb-6">
         <h1 className="text-2xl font-bold text-foreground">Activity</h1>
         <p className="text-sm text-muted-foreground mt-1">
           Track recent changes across your workspace.
         </p>
-      </div>
+      </motion.div>
 
       {/* Navigation Tabs and Filter */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border mb-8 gap-4">
+      <motion.div
+        variants={dropDown}
+        className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-border mb-8 gap-4"
+      >
         {/* shadcn Tabs component replacing raw <button> tab navigation */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList variant="line" className="overflow-x-auto">
@@ -74,111 +76,128 @@ export default function ActivityPages() {
           >
             <Calendar className="w-4 h-4" />
             <span>{dateRangeLabels[dateRange]}</span>
-            <ChevronDown className="w-3.5 h-3.5" />
+            <motion.span
+              animate={{ rotate: showDateDropdown ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+              className="flex"
+            >
+              <ChevronDown className="w-3.5 h-3.5" />
+            </motion.span>
           </Button>
-          {showDateDropdown && (
-            <div className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-md py-1 min-w-[160px]">
-              {(["7d", "30d", "90d"] as DateRange[]).map((option) => (
-                <button
-                  key={option}
-                  className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
-                    dateRange === option ? "text-primary font-medium" : "text-foreground"
-                  }`}
-                  onClick={() => {
-                    setDateRange(option);
-                    setShowDateDropdown(false);
-                  }}
-                >
-                  {dateRangeLabels[option]}
-                </button>
-              ))}
-            </div>
-          )}
+          <AnimatePresence>
+            {showDateDropdown && (
+              <motion.div
+                variants={popIn}
+                initial="hidden"
+                animate="show"
+                exit="exit"
+                className="absolute right-0 top-full mt-1 z-50 bg-card border border-border rounded-lg shadow-md py-1 min-w-[160px] origin-top-right"
+              >
+                {(["7d", "30d", "90d"] as DateRange[]).map((option) => (
+                  <button
+                    key={option}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors ${
+                      dateRange === option ? "text-primary font-medium" : "text-foreground"
+                    }`}
+                    onClick={() => {
+                      setDateRange(option);
+                      setShowDateDropdown(false);
+                    }}
+                  >
+                    {dateRangeLabels[option]}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </motion.div>
 
       {/* Main Activity Timeline - shadcn Card replacing raw <div> */}
-      <Card className="max-w-5xl shadow-xs">
-        <CardContent className="p-6 md:p-8">
-          <div className="relative">
-            {/* Vertical Timeline Bar */}
-            <div className="absolute top-3 left-4.75 bottom-6 w-[1.5px] bg-muted" />
+      <motion.div variants={fadeUp}>
+        <Card className="max-w-5xl shadow-xs">
+          <CardContent className="p-6 md:p-8">
+            <div className="relative">
+              {/* Vertical Timeline Bar */}
+              <div className="absolute top-3 left-4.75 bottom-6 w-[1.5px] bg-muted" />
 
-            <div className="space-y-8 relative">
-              {filteredActivity.map((group) => (
-                <div key={group.section} className="space-y-6">
-                  <div className="pl-12">
-                    <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
-                      {group.section}
-                    </span>
-                  </div>
+              <motion.div variants={fadeUpStagger} className="space-y-8 relative">
+                {filteredActivity.map((group) => (
+                  <motion.div key={group.section} variants={fadeUp} className="space-y-6">
+                    <div className="pl-12">
+                      <span className="text-[11px] font-bold tracking-wider text-muted-foreground uppercase">
+                        {group.section}
+                      </span>
+                    </div>
 
-                  {group.items.map((item) => {
-                    const Icon = item.icon;
-                    return (
-                      <div
-                        key={item.id}
-                        className="relative flex gap-4 items-start"
-                      >
-                        {/* shadcn Avatar replacing raw initials <div> */}
-                        <div className="relative z-10 shrink-0">
-                          <Avatar size="lg" className="ring-4 ring-white">
-                            <AvatarFallback>{item.user.initials}</AvatarFallback>
-                          </Avatar>
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <div
+                          key={item.id}
+                          className="relative flex gap-4 items-start"
+                        >
+                          {/* shadcn Avatar replacing raw initials <div> */}
+                          <div className="relative z-10 shrink-0">
+                            <Avatar size="lg" className="ring-4 ring-white">
+                              <AvatarFallback>{item.user.initials}</AvatarFallback>
+                            </Avatar>
 
-                          <div
-                            className={`absolute -bottom-0.5 -right-0.5 ${item.iconBg} text-white p-0.5 rounded-full ring-2 ring-white flex items-center justify-center`}
-                          >
-                            <Icon className="w-2.5 h-2.5 stroke-3" />
-                          </div>
-                        </div>
-
-                        {/* Item Content */}
-                        <div className="pt-1 flex-1 min-w-0">
-                          <p className="text-sm text-foreground leading-snug">
-                            <span className="font-semibold text-foreground">
-                              {item.user.name}
-                            </span>{" "}
-                            <span className="text-foreground">{item.action}</span>{" "}
-                            {item.target && (
-                              <span className="font-semibold text-primary">
-                                {item.target}
-                              </span>
-                            )}
-                          </p>
-
-                          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                            <span>{item.time}</span>
-                            {item.project && (
-                              <>
-                                <span>•</span>
-                                <Badge variant="outline" className="text-[11px]">
-                                  {item.project}
-                                </Badge>
-                              </>
-                            )}
-                          </div>
-
-                          {item.comment && (
-                            <div className="mt-3 p-3.5 bg-muted border border-border rounded-lg text-xs text-muted-foreground leading-relaxed max-w-xl">
-                              {item.comment}
+                            <div
+                              className={`absolute -bottom-0.5 -right-0.5 ${item.iconBg} text-white p-0.5 rounded-full ring-2 ring-white flex items-center justify-center`}
+                            >
+                              <Icon className="w-2.5 h-2.5 stroke-3" />
                             </div>
-                          )}
+                          </div>
+
+                          {/* Item Content */}
+                          <div className="pt-1 flex-1 min-w-0">
+                            <p className="text-sm text-foreground leading-snug">
+                              <span className="font-semibold text-foreground">
+                                {item.user.name}
+                              </span>{" "}
+                              <span className="text-foreground">{item.action}</span>{" "}
+                              {item.target && (
+                                <span className="font-semibold text-primary">
+                                  {item.target}
+                                </span>
+                              )}
+                            </p>
+
+                            <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                              <span>{item.time}</span>
+                              {item.project && (
+                                <>
+                                  <span>•</span>
+                                  <Badge variant="outline" className="text-[11px]">
+                                    {item.project}
+                                  </Badge>
+                                </>
+                              )}
+                            </div>
+
+                            {item.comment && (
+                              <div className="mt-3 p-3.5 bg-muted border border-border rounded-lg text-xs text-muted-foreground leading-relaxed max-w-xl">
+                                {item.comment}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))}
-              {filteredActivity.length === 0 && (
-                <div className="pl-12 text-sm text-muted-foreground">
-                  No activity found for this filter.
-                </div>
-              )}
+                      );
+                    })}
+                  </motion.div>
+                ))}
+                {filteredActivity.length === 0 && (
+                  <motion.div variants={fadeUp} className="pl-12 text-sm text-muted-foreground">
+                    No activity found for this filter.
+                  </motion.div>
+                )}
+              </motion.div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    </motion.div>
+    </PageContainer>
   );
 }

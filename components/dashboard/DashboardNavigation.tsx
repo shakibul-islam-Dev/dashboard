@@ -1,10 +1,10 @@
 "use client";
 
-import { Search, Bell, CircleHelp, Menu, LogOut, Settings, User } from "lucide-react";
+import { Bell, CircleHelp, Menu, LogOut, Settings, User } from "lucide-react";
 import { currentUser } from "@/data/navigation";
-import { dropdownNotifications } from "@/data/notifications";
 import { logoutUser, useSession } from "@/lib/auth";
-import Image from "next/image";
+import { useProfile, initialsFromName } from "@/lib/profileStore";
+import { useNotifications } from "@/lib/notificationsStore";
 import { useState, useRef, useEffect } from "react";
 import NotificationsModal from "../customsUi/NotificationsModal";
 import Link from "next/link";
@@ -12,8 +12,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 // Button component from shadcn/ui (base-ui) — used for all icon actions
 import { Button } from "@/components/ui/button";
-// Input component from shadcn/ui (base-ui) — replaces the raw <input> search field
-import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface DashboardNavigationProps {
   onMenuClick?: () => void;
@@ -27,11 +26,8 @@ export default function DashboardNavigation({
   // --- Notifications modal state ---
   const [isShowComponent, setShowComponent] = useState(false);
 
-  // --- Search input state ---
-  const [searchQuery, setSearchQuery] = useState("");
-
-  // --- Unread notification count ---
-  const unreadCount = dropdownNotifications.filter((n) => n.unread).length;
+  // --- Unread notification count (reactive: read/delete in the feed updates it) ---
+  const { unreadCount } = useNotifications();
 
   // --- User menu dropdown ---
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -39,6 +35,12 @@ export default function DashboardNavigation({
 
   // --- Logged-in user from localStorage session ---
   const sessionUser = useSession();
+
+  // --- Profile (uploaded photo / name / job title) ---
+  const profile = useProfile();
+  const displayName = profile.fullName || sessionUser?.fullName || currentUser.name;
+  const displayRole = sessionUser?.email ?? profile.jobTitle ?? currentUser.role;
+  const avatarSrc = profile.avatar || currentUser.avatar;
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -56,19 +58,9 @@ export default function DashboardNavigation({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [showUserMenu]);
 
-  // --- Search handler: shows toast with search query ---
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && searchQuery.trim()) {
-      toast.info("Search", {
-        description: `Searching for "${searchQuery.trim()}"...`,
-      });
-      setSearchQuery("");
-    }
-  };
-
   return (
     <nav className="flex items-center justify-between w-full h-16 px-3 sm:px-4 md:px-6 bg-card border-b border-border gap-2">
-      {/* Left Side: Mobile Menu + Search Bar */}
+      {/* Left Side: Mobile Menu + App Branding */}
       <div className="flex items-center gap-2 flex-1 min-w-0">
         {/* Mobile menu toggle — ghost icon button for opening the sidebar on mobile */}
         <Button
@@ -81,30 +73,12 @@ export default function DashboardNavigation({
           <Menu className="w-6 h-6" />
         </Button>
 
-        {/* Desktop search input — uses the shadcn/ui Input component */}
-        <div className="relative w-full max-w-md hidden sm:block">
-          <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <Search className="w-5 h-5 text-muted-foreground" />
-          </div>
-          <Input
-            type="text"
-            className="pl-10"
-            placeholder="Search..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-          />
+        {/* App brand — shown on responsive screens where the sidebar is a drawer */}
+        <div className="lg:hidden flex items-center min-w-0">
+          <h1 className="font-bold text-xl text-foreground truncate whitespace-nowrap">
+            Task Board
+          </h1>
         </div>
-
-        {/* Mobile search toggle — ghost icon button for triggering search on small screens */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="sm:hidden shrink-0"
-          title="Search"
-        >
-          <Search className="w-5 h-5" />
-        </Button>
       </div>
 
       {/* Right Side: Icons & Avatar */}
@@ -138,26 +112,26 @@ export default function DashboardNavigation({
         {/* User Avatar with dropdown menu */}
         <div className="relative" ref={userMenuRef}>
           <button
-            className="relative w-8 h-8 sm:w-9 sm:h-9 overflow-hidden rounded-full border border-border cursor-pointer sm:ml-2"
+            className="relative overflow-hidden rounded-full cursor-pointer sm:ml-2"
             onClick={() => setShowUserMenu((prev) => !prev)}
+            title={displayName}
           >
-            <Image
-              src={currentUser.avatar}
-              alt={currentUser.name}
-              width={300}
-              height={300}
-              className="object-cover w-full h-full"
-            />
+            <Avatar className="size-8 sm:size-9">
+              <AvatarImage src={avatarSrc} alt={displayName} />
+              <AvatarFallback className="text-xs font-semibold">
+                {initialsFromName(displayName)}
+              </AvatarFallback>
+            </Avatar>
           </button>
           {/* User dropdown menu */}
           {showUserMenu && (
             <div className="absolute right-0 top-full mt-2 w-44 bg-card border border-border rounded-lg shadow-xl z-50 py-1 animate-in fade-in duration-150">
               <div className="px-3 py-2 border-b border-border">
                 <p className="text-sm font-semibold text-foreground">
-                  {sessionUser?.fullName ?? currentUser.name}
+                  {displayName}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {sessionUser?.email ?? currentUser.role}
+                <p className="text-xs text-muted-foreground truncate">
+                  {displayRole}
                 </p>
               </div>
               <button

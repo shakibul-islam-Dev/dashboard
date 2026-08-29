@@ -2,19 +2,17 @@
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter, usePathname } from "next/navigation";
-import { useRef } from "react";
 
 export default function RouterNavigation() {
   const router = useRouter();
   const pathname = usePathname();
 
-  // --- Track forward availability via ref ---
-  // On initial load there is no forward history, so forward is always disabled.
-  // A real implementation would listen to popstate; this is the safe default.
-  const canGoForward = useRef(false);
-
   // Detect "first page" (root) to disable back
   const isRoot = pathname === "/" || pathname === "/dashboard";
+
+  // Forward is always disabled by default: there is no reliable way to know
+  // if a forward history entry exists without listening to popstate.
+  const canGoForward = false;
 
   return (
     <div className="flex items-center gap-1">
@@ -31,7 +29,7 @@ export default function RouterNavigation() {
         variant="outline"
         size="icon"
         onClick={() => router.forward()}
-        disabled={!canGoForward.current}
+        disabled={!canGoForward}
         title="Go forward"
       >
         <ChevronRight className="h-4 w-4" />

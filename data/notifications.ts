@@ -75,6 +75,28 @@ export const mailNotifications: MailNotification[] = [
     isRead: true,
     isStarred: false,
   },
+  {
+    id: "5",
+    sender: "Sentry",
+    subject: "Error spike in api-platform (error_rate 3.1%)",
+    snippet:
+      "The /graphql gateway recorded 412 errors in the last 10 minutes. Related to...",
+    time: "7:58 AM",
+    category: "primary",
+    isRead: false,
+    isStarred: false,
+  },
+  {
+    id: "6",
+    sender: "Sarah Jenkins",
+    subject: "Approved: Dashboard Redesign scope",
+    snippet:
+      "The embeddable chart scope is approved — go ahead and start the saved filters...",
+    time: "Yesterday",
+    category: "updates",
+    isRead: true,
+    isStarred: false,
+  },
 ];
 
 export const dropdownNotifications: DropdownNotification[] = [
@@ -120,6 +142,27 @@ export const dropdownNotifications: DropdownNotification[] = [
     type: "warning",
     title: '"Mobile App" deadline is approaching',
     time: "Oct 24",
+    unread: false,
+    section: "EARLIER",
+  },
+  {
+    id: "6",
+    type: "assigned",
+    actor: "Elena Rostova",
+    avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150",
+    title: 'assigned "Refresh token rotation tests" to you',
+    time: "4h ago",
+    unread: true,
+    section: "TODAY",
+  },
+  {
+    id: "7",
+    type: "completed",
+    actor: "Michael Chen",
+    avatar: "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150",
+    title: "completed",
+    target: '"Multi-currency ledger model"',
+    time: "Yesterday",
     unread: false,
     section: "EARLIER",
   },

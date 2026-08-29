@@ -9,7 +9,7 @@ import {
   Database,
   Save,
 } from "lucide-react";
-import { useTheme } from "@/components/customsUi/ThemeProvider";
+import { useTheme, type Theme } from "@/components/customsUi/ThemeProvider";
 import { toast } from "sonner";
 
 // shadcn UI components
@@ -45,13 +45,15 @@ export default function Preferences() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- must sync after mount to avoid SSR/hydration mismatch
       if (raw) setPreferences((prev) => ({ ...prev, ...JSON.parse(raw) }));
     } catch {
       /* ignore */
     }
   }, []);
 
-  const handleChange = (key: keyof typeof preferences, value: any) => {
+  type PreferenceValue = string | boolean;
+  const handleChange = (key: keyof typeof preferences, value: PreferenceValue) => {
     setPreferences((prev) => ({ ...prev, [key]: value }));
   };
 
@@ -70,7 +72,7 @@ export default function Preferences() {
   /* ── Theme tile click → update local state + provider ── */
   const handleThemeChange = (id: string) => {
     handleChange("theme", id);
-    setTheme(id as any);
+    setTheme(id as Theme);
   };
 
   return (

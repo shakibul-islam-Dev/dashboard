@@ -15,8 +15,10 @@ import {
   currentUser,
 } from "@/data/navigation";
 import { useSession } from "@/lib/auth";
+import { useProfile, initialsFromName } from "@/lib/profileStore";
 // Button component from shadcn/ui (base-ui)
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface DashboardSideBarProps {
   mobileOpen: boolean;
@@ -32,6 +34,7 @@ export default function DashboardSideBar({
 
   useEffect(() => {
     const collapsed = localStorage.getItem("sidebar-collapsed") === "true";
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- must sync after mount to avoid SSR/hydration mismatch
     setIsOpen(!collapsed);
   }, []);
 
@@ -55,7 +58,9 @@ export default function DashboardSideBar({
   };
 
   const getLinkClasses = (active: boolean) =>
-    `flex items-center gap-3 p-2.5 rounded-lg transition-colors group ${
+    `flex items-center p-2.5 rounded-lg transition-colors group ${
+      isOpen || mobileOpen ? "gap-3" : "lg:justify-center"
+    } ${
       active
         ? "text-primary bg-primary/10 font-semibold"
         : "text-muted-foreground hover:text-primary hover:bg-primary/10"
@@ -83,33 +88,32 @@ export default function DashboardSideBar({
             : "-translate-x-full"
         } ${isOpen ? "lg:w-64" : "lg:w-20"}`}
       >
-        {/* Top Section: Logo/Title & Toggle */}
-        <div className="flex items-center justify-between p-4 border-b border-border h-16">
-          <div className={labelClasses("overflow-hidden")}>
-            <h1 className="font-bold text-xl text-foreground">Task Board</h1>
+        {/* Top Section: Logo & Brand */}
+        <div className="flex items-center justify-between h-16 border-b border-border px-4">
+          <div
+            className={`flex items-center min-w-0 flex-1 ${
+              isOpen || mobileOpen ? "gap-2.5" : "lg:justify-center"
+            }`}
+            title="Task Board"
+          >
+            {/* App logo mark — always visible, keeps identity when collapsed */}
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center text-white text-xs font-extrabold shrink-0">
+              TB
+            </div>
+            {/* Wordmark — slides away when collapsed on desktop */}
+            <div className={labelClasses("overflow-hidden")}>
+              <h1 className="font-bold text-xl text-foreground whitespace-nowrap">
+                Task Board
+              </h1>
+            </div>
           </div>
 
-          {/* Desktop Collapse Toggle — ghost icon button for sidebar collapse */}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleSidebar}
-            className={`hidden lg:block ${isOpen ? "" : "mx-auto"}`}
-            title="Toggle Sidebar"
-          >
-            {isOpen ? (
-              <PanelLeftClose size={20} />
-            ) : (
-              <PanelRightClose size={20} />
-            )}
-          </Button>
-
-          {/* Mobile Close Button — ghost icon button to dismiss the mobile sidebar */}
+          {/* Mobile Close Button — dismisses the drawer on small screens */}
           <Button
             variant="ghost"
             size="icon"
             onClick={onMobileClose}
-            className="lg:hidden ml-auto"
+            className="lg:hidden shrink-0"
             title="Close Sidebar"
           >
             <X size={20} />
@@ -174,8 +178,8 @@ export default function DashboardSideBar({
           {/* User Profile — links to settings */}
           <Link
             href="/dashboard/settings"
-            className={`flex items-center gap-3 p-2 mt-2 rounded-lg transition-colors cursor-pointer ${
-              isOpen || mobileOpen ? "hover:bg-muted" : ""
+            className={`flex items-center p-2 mt-2 rounded-lg transition-colors cursor-pointer ${
+              isOpen || mobileOpen ? "gap-3 justify-start hover:bg-muted" : "lg:justify-center"
             }`}
           >
             <div className="p-2 bg-primary/15 text-primary rounded-full min-w-fit">
@@ -194,6 +198,29 @@ export default function DashboardSideBar({
               </p>
             </div>
           </Link>
+        </div>
+
+        {/* Collapse Toggle — desktop only, pinned at the bottom so it never floats in a wrong spot */}
+        <div className="border-t border-border p-3 hidden lg:block">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={isOpen ? "Collapse Sidebar" : "Expand Sidebar"}
+            className={`flex items-center w-full p-2.5 rounded-lg transition-colors text-muted-foreground hover:text-primary hover:bg-primary/10 cursor-pointer ${
+              isOpen ? "gap-3" : "lg:justify-center"
+            }`}
+          >
+            <div className="min-w-fit">
+              {isOpen ? (
+                <PanelLeftClose size={20} />
+              ) : (
+                <PanelRightClose size={20} />
+              )}
+            </div>
+            <span className={labelClasses()}>
+              {isOpen ? "Collapse" : "Expand"}
+            </span>
+          </button>
         </div>
       </aside>
     </>

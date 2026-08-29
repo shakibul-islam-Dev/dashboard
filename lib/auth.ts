@@ -16,6 +16,13 @@ export interface AuthSession {
 const USERS_KEY = "taskboard-users";
 const SESSION_KEY = "taskboard-session";
 
+/* ── Demo account used by the "Demo Login" buttons on the auth pages ── */
+export const DEMO_USER = {
+  fullName: "Demo User",
+  email: "demo@taskboard.app",
+  password: "demo1234",
+};
+
 type AuthResult = { ok: true } | { ok: false; error: string };
 
 const sessionListeners = new Set<() => void>();
@@ -109,6 +116,41 @@ export function loginUser(email: string, password: string): AuthResult {
   const session: AuthSession = {
     fullName: user.fullName,
     email: user.email,
+    role: "Member",
+    loginAt: new Date().toISOString(),
+  };
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  } catch {
+    return {
+      ok: false,
+      error: "Could not start your session. Please try again.",
+    };
+  }
+  notifySessionChange();
+  return { ok: true };
+}
+
+/* ── Demo login: seeds a demo account and starts a session instantly ──
+   Lets anyone explore the dashboard without registering. */
+export function demoLogin(): AuthResult {
+  // Seed the demo account so the regular login form accepts it too
+  const users = getStoredUsers();
+  const alreadyExists = users.some(
+    (u) => u.email.toLowerCase() === DEMO_USER.email.toLowerCase(),
+  );
+  if (!alreadyExists) {
+    users.push(DEMO_USER);
+    try {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    } catch {
+      return { ok: false, error: "Could not prepare the demo account." };
+    }
+  }
+
+  const session: AuthSession = {
+    fullName: DEMO_USER.fullName,
+    email: DEMO_USER.email,
     role: "Member",
     loginAt: new Date().toISOString(),
   };
