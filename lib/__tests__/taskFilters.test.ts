@@ -115,6 +115,31 @@ describe("filterAndSortTasks", () => {
     expect(filterAndSortTasks(fixtures, { due: "Upcoming" }).map((t) => t.id)).toEqual(["T4"]);
   });
 
+  it("filters by assignee (exact match and Unassigned)", () => {
+    const assigned = [
+      task({ id: "A1", assignee: "Sarah Chen" }),
+      task({ id: "A2", assignee: "Alex Morgan" }),
+      task({ id: "A3" }),
+    ];
+    expect(
+      filterAndSortTasks(assigned, { assignee: "Alex Morgan" }).map((t) => t.id),
+    ).toEqual(["A2"]);
+    expect(
+      filterAndSortTasks(assigned, { assignee: "Unassigned" }).map((t) => t.id),
+    ).toEqual(["A3"]);
+    expect(filterAndSortTasks(assigned, { assignee: "All" })).toHaveLength(3);
+  });
+
+  it("matches assignee text in the search query", () => {
+    const withAssignee = [
+      task({ id: "A1", assignee: "Sarah Chen" }),
+      task({ id: "A2" }),
+    ];
+    expect(
+      filterAndSortTasks(withAssignee, { search: "sarah" }).map((t) => t.id),
+    ).toEqual(["A1"]);
+  });
+
   it("combines filters (search + status + tag)", () => {
     const result = filterAndSortTasks(fixtures, {
       section: "OVERDUE",

@@ -272,7 +272,7 @@ There is **no global state management library** (no Redux, Zustand, Jotai, etc.)
 - Primary: `#2563eb` (blue)
 - Background: `#f7f7f8` (light) / `#0f0e13` (dark)
 - Card: `#ffffff` (light) / `#1d1c1f` (dark)
-- Font: Roboto Mono (applied as `--font-sans`)
+- Fonts: Poppins for body (`--font-sans`), Roboto Mono for headings (`--font-heading`) and mono (`--font-mono`)
 
 ---
 

@@ -4,19 +4,39 @@ import React, { useEffect } from "react";
 import { AlertTriangle, ShieldAlert, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { dependencyIncompleteInfo } from "@/data/tasks";
+import { dependencyIncompleteInfo, type TaskDetailData } from "@/data/tasks";
 
 interface DependencyModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm?: () => void;
+  /** Live prerequisite pulled from stored task data (falls back to static demo info). */
+  prerequisite?: TaskDetailData["dependency"] | null;
+  /** The status the user tried to move the task to (usually "Done"). */
+  targetStatus?: string;
 }
+
+/* Status dot color for the prerequisite badge. */
+const STATUS_DOT_STYLES: Record<string, string> = {
+  Done: "bg-emerald-500",
+  "In Progress": "bg-blue-500",
+  Review: "bg-amber-500",
+  Todo: "bg-slate-400",
+  Unresolved: "bg-rose-500",
+};
 
 export default function DependencyIncompleteModal({
   isOpen,
   onClose,
   onConfirm,
+  prerequisite,
+  targetStatus,
 }: DependencyModalProps) {
+  const info = prerequisite ?? dependencyIncompleteInfo.prerequisiteTask;
+  const target = targetStatus ?? dependencyIncompleteInfo.targetStatus;
+  const dotClass =
+    STATUS_DOT_STYLES[info.status] ?? STATUS_DOT_STYLES.Unresolved;
+
   // Close modal on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -84,17 +104,17 @@ export default function DependencyIncompleteModal({
 
               {/* Status Badge - shadcn Badge with outline variant */}
               <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30/60 text-[10px] font-medium gap-1.5 px-2 py-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-primary/100" />
-                {dependencyIncompleteInfo.prerequisiteTask.status}
+                <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
+                {info.status}
               </Badge>
             </div>
 
             <div className="flex items-center gap-2 pt-0.5">
               <span className="text-xs font-mono font-medium text-muted-foreground">
-                {dependencyIncompleteInfo.prerequisiteTask.code}
+                {info.code}
               </span>
               <span className="text-xs font-semibold text-foreground">
-                {dependencyIncompleteInfo.prerequisiteTask.title}
+                {info.title}
               </span>
             </div>
           </div>
@@ -102,7 +122,7 @@ export default function DependencyIncompleteModal({
           <p className="text-xs text-muted-foreground leading-relaxed">
             You are attempting to move the current task to{" "}
             <strong className="text-foreground font-semibold">
-              {dependencyIncompleteInfo.targetStatus}
+              {target}
             </strong>
             , but its prerequisite is still being worked on.
           </p>

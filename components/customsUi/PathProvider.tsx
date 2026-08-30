@@ -2,41 +2,45 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronRight } from "lucide-react";
+import { Slash } from "lucide-react";
+import { routeCrumbs } from "@/lib/routeLabels";
 
+/**
+ * Breadcrumb trail for the active route, rendered on every dashboard page.
+ * Labels come from the shared route map in lib/routeLabels so they stay in
+ * sync with the browser-tab title.
+ */
 export default function PathProvider() {
   const pathname = usePathname();
+  const crumbs = routeCrumbs(pathname);
 
-  const segments = pathname.split("/").filter(Boolean);
-
-  if (segments.length === 0) return null;
+  if (crumbs.length === 0) return null;
 
   return (
-    <nav className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm min-w-0">
-      {segments.map((segment, index) => {
-        const path = `/${segments.slice(0, index + 1).join("/")}`;
-        const isLast = index === segments.length - 1;
-
-        const formattedName = decodeURIComponent(segment)
-          .replace(/-/g, " ")
-          .replace(/^\w/, (c) => c.toUpperCase());
-
+    <nav
+      aria-label="Breadcrumb"
+      className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm min-w-0"
+    >
+      {crumbs.map((crumb, index) => {
+        const isLast = index === crumbs.length - 1;
         return (
-          <div key={path} className="flex items-center gap-2">
+          <div key={crumb.path} className="flex items-center gap-2">
             {index > 0 && (
-              <ChevronRight className="w-4 h-4 text-muted-foreground shrink-0" />
+              <Slash className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
             )}
 
-            <Link
-              href={path}
-              className={`${
-                isLast
-                  ? "text-foreground font-semibold"
-                  : "text-muted-foreground font-medium"
-              } hover:text-primary transition-colors`}
-            >
-              {formattedName}
-            </Link>
+            {isLast ? (
+              <span className="text-foreground font-semibold truncate max-w-[220px]">
+                {crumb.label}
+              </span>
+            ) : (
+              <Link
+                href={crumb.path}
+                className="text-muted-foreground font-medium hover:text-primary transition-colors"
+              >
+                {crumb.label}
+              </Link>
+            )}
           </div>
         );
       })}

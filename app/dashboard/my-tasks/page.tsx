@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import PageContainer from "@/components/customsUi/PageContainer";
 import PageNav from "@/components/customsUi/PageNav";
 import {
@@ -28,6 +28,10 @@ import {
   filterAndSortTasks,
   type DueFilter,
 } from "@/lib/taskFilters";
+import {
+  useTaskEditOverrides,
+  type TaskEditOverride,
+} from "@/lib/taskEditStore";
 import CreateTaskModal from "@/components/customsUi/CreateTaskModal";
 import TaskDetailModal from "@/components/customsUi/TaskDetailModal";
 import {
@@ -35,10 +39,7 @@ import {
   TaskTable,
   StatusBadge,
 } from "@/components/customsUi/MyTasksTable";
-import EditTaskModal, {
-  LS_EDITS_KEY,
-  EDITS_EVENT,
-} from "@/components/customsUi/EditTaskModal";
+import EditTaskModal from "@/components/customsUi/EditTaskModal";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "motion/react";
 import { fadeUpStagger, fadeUp, dropDown } from "@/lib/motion";
@@ -54,55 +55,21 @@ type SectionFilter = "ALL" | "OVERDUE" | "TODAY" | "ARCHIVED";
 type SortDirection = "asc" | "desc";
 
 // === FILTER KEYS (the toolbar dropdowns) ===
-type FilterKey = "Status" | "Priority" | "Project" | "Tag" | "Due Date";
-
-// === EDITED TASK SHAPE (what EditTaskModal persists per task id) ===
-interface EditedTask {
-  id: string;
-  title?: string;
-  description?: string;
-  status?: string;
-  priority?: string;
-  assignee?: string;
-  dueDate?: string;
-  tags?: string[];
-  subtasks?: unknown[];
-  updatedAt?: string;
-}
+type FilterKey = "Status" | "Priority" | "Project" | "Assignee" | "Tag" | "Due Date";
 
 export default function MyTaskPage() {
   // ── Custom tasks created via the Create Task modal (localStorage-backed) ──
   const { tasks: customTasks, removeTask } = useCustomTasks();
 
-  // ── Edits made via the Edit Task modal (localStorage-backed) ──
-  const [editedTasks, setEditedTasks] = useState<Record<string, EditedTask>>({});
-
-  const loadEdits = useCallback(() => {
-    try {
-      const raw = localStorage.getItem(LS_EDITS_KEY);
-      setEditedTasks(raw ? (JSON.parse(raw) as Record<string, EditedTask>) : {});
-    } catch {
-      setEditedTasks({});
-    }
-  }, []);
-
-  // Load persisted edits on mount and sync with the Edit modal + other tabs
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- must sync after mount to avoid SSR/hydration mismatch
-    loadEdits();
-    window.addEventListener(EDITS_EVENT, loadEdits);
-    window.addEventListener("storage", loadEdits);
-    return () => {
-      window.removeEventListener(EDITS_EVENT, loadEdits);
-      window.removeEventListener("storage", loadEdits);
-    };
-  }, [loadEdits]);
+  // ── Edits made via the Edit Task modal / Kanban (localStorage-backed,
+  //    synced app-wide through the shared task-edit store) ──
+  const editedTasks = useTaskEditOverrides();
 
   // ── Merge static seed data + user-created tasks + persisted edits ──
   const tasks = useMemo<MyTask[]>(() => {
     const base = [...initialTasks, ...customTasks.map(customTaskToMyTask)];
     return base.map((t) => {
-      const edit = editedTasks[t.id];
+      const edit: TaskEditOverride | undefined = editedTasks[t.id];
       if (!edit) return t;
       return {
         ...t,
@@ -111,6 +78,9 @@ export default function MyTaskPage() {
         priority: edit.priority ?? t.priority,
         dueDate: edit.dueDate ?? t.dueDate,
         tags: edit.tags ?? t.tags,
+        assignee: edit.assignee ?? t.assignee,
+        dependency:
+          edit.dependency !== undefined ? edit.dependency : t.dependency ?? null,
       };
     });
   }, [customTasks, editedTasks]);
@@ -155,6 +125,7 @@ export default function MyTaskPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [priorityFilter, setPriorityFilter] = useState("All");
   const [projectFilter, setProjectFilter] = useState("All");
+  const [assigneeFilter, setAssigneeFilter] = useState("All");
   const [tagFilter, setTagFilter] = useState("All");
   const [dueFilter, setDueFilter] = useState<DueFilter>("All");
 
@@ -162,6 +133,7 @@ export default function MyTaskPage() {
     Status: statusFilter,
     Priority: priorityFilter,
     Project: projectFilter,
+    Assignee: assigneeFilter,
     Tag: tagFilter,
     "Due Date": dueFilter,
   };
@@ -173,6 +145,15 @@ export default function MyTaskPage() {
       Project: [
         "All",
         ...Array.from(new Set(activeTasks.map((t) => t.project))).sort(),
+      ],
+      Assignee: [
+        "All",
+        "Unassigned",
+        ...Array.from(
+          new Set(
+            activeTasks.map((t) => t.assignee).filter((a): a is string => !!a),
+          ),
+        ).sort(),
       ],
       Tag: ["All", ...Array.from(new Set(activeTasks.flatMap((t) => t.tags)))],
       "Due Date": ["All", "Today", "Overdue", "Upcoming"],
@@ -190,6 +171,9 @@ export default function MyTaskPage() {
         break;
       case "Project":
         setProjectFilter(value);
+        break;
+      case "Assignee":
+        setAssigneeFilter(value);
         break;
       case "Tag":
         setTagFilter(value);
@@ -228,6 +212,7 @@ export default function MyTaskPage() {
         status: statusFilter,
         priority: priorityFilter,
         project: projectFilter,
+        assignee: assigneeFilter,
         tag: tagFilter,
         due: dueFilter,
         direction: sortDirection,
@@ -239,6 +224,7 @@ export default function MyTaskPage() {
       statusFilter,
       priorityFilter,
       projectFilter,
+      assigneeFilter,
       tagFilter,
       dueFilter,
       sortDirection,
@@ -699,6 +685,7 @@ export default function MyTaskPage() {
         isOpen={showEditModal && !!editTarget}
         onClose={() => setShowEditModal(false)}
         task={editTarget}
+        dependencyTasks={activeTasks}
       />
     </motion.div>
     </PageContainer>

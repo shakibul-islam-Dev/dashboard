@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   X,
   MoreVertical,
@@ -14,10 +14,19 @@ import {
   Plus,
   Ban,
   Loader2,
+  Search,
 } from "lucide-react";
 import { editTaskDefaults, type Subtask } from "@/data/tasks";
 import { toast } from "sonner";
 import DependencyIncompleteModal from "@/components/customsUi/DependencyIncompleteModal";
+import {
+  parseDependencyReference,
+  findDependencyTask,
+  evaluateDependencyGate,
+  type DependencyRef,
+  type DependencyLookupTask,
+} from "@/lib/dependency";
+import { writeTaskEdit } from "@/lib/taskEditStore";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { AnimatePresence, motion } from "motion/react";
 
@@ -35,9 +44,7 @@ import {
 } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 
-/* ── localStorage key + cross-component sync event ── */
-export const LS_EDITS_KEY = "dashboard_edited_tasks";
-export const EDITS_EVENT = "dashboard:task-edited";
+/* ── Task-edit persistence lives in lib/taskEditStore (localStorage-backed) ── */
 
 interface EditTaskModalProps {
   isOpen: boolean;
@@ -54,7 +61,11 @@ interface EditTaskModalProps {
     tags: string[];
     subtasks?: Subtask[];
     blockedBy?: { code: string; title: string } | null;
+    /** Free-form dependency reference (task id or title) from stored task data. */
+    dependency?: string | null;
   } | null;
+  /** Stored task data used to resolve the dependency's live status. */
+  dependencyTasks?: DependencyLookupTask[];
 }
 
 interface EditTaskFormValues {
@@ -93,6 +104,7 @@ export default function EditTaskModal({
   isOpen,
   onClose,
   task,
+  dependencyTasks = [],
 }: EditTaskModalProps) {
   // ── React Hook Form ─────────────────────────────────────────────────────────
   const {
@@ -127,13 +139,26 @@ export default function EditTaskModal({
   const [editSubtaskId, setEditSubtaskId] = useState<string | null>(null);
   const [editSubtaskValue, setEditSubtaskValue] = useState("");
 
-  // ── Dependency Visibility ──────────────────────────────────────────────────
-  const [hasDependency, setHasDependency] = useState(
-    !!(task?.blockedBy ?? editTaskDefaults.blockedBy),
+  // ── Dependency state: a free-form reference resolved against stored tasks ──
+  const [dependencyRef, setDependencyRef] = useState<string | null>(
+    parseDependencyReference(
+      task?.dependency ?? task?.blockedBy?.code ?? null,
+    ),
+  );
+  const [depInput, setDepInput] = useState("");
+  const hasDependency = dependencyRef !== null;
+
+  /* Live prerequisite: looked up in the project's stored task data so the
+     warning only fires when the dependency is actually incomplete. */
+  const resolvedDependency = useMemo(
+    () => findDependencyTask(dependencyRef, dependencyTasks, task?.id),
+    [dependencyRef, dependencyTasks, task?.id],
   );
 
   // ── Dependency Warning Modal (status → Done with an incomplete dependency) ─
   const [showDependencyModal, setShowDependencyModal] = useState(false);
+  const [pendingPrerequisite, setPendingPrerequisite] =
+    useState<DependencyRef | null>(null);
 
   // ── Submission State ────────────────────────────────────────────────────────
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -208,7 +233,11 @@ export default function EditTaskModal({
   };
 
   // ── Save Handler: validates, persists edits to localStorage, shows toast ─────
+  // In-flight ref lock prevents a rapid double-submit from firing 2 toasts.
+  const savingRef = useRef(false);
   const doSave: SubmitHandler<EditTaskFormValues> = async (data) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setShowDependencyModal(false);
     setIsSubmitting(true);
 
@@ -225,34 +254,35 @@ export default function EditTaskModal({
       assignee,
       dueDate: data.dueDate,
       tags,
+      dependency: dependencyRef,
       subtasks,
       updatedAt: new Date().toISOString(),
     };
 
-    // Persist edits to localStorage
-    try {
-      const existing = JSON.parse(localStorage.getItem(LS_EDITS_KEY) || "{}");
-      existing[id] = editedTask;
-      localStorage.setItem(LS_EDITS_KEY, JSON.stringify(existing));
-    } catch {
-      /* localStorage unavailable – ignore */
-    }
-
-    // Notify all mounted UI (My Tasks, ...) that a task was edited
-    window.dispatchEvent(new CustomEvent(EDITS_EVENT, { detail: editedTask }));
+    // Persist edits to localStorage + notify all mounted UI
+    writeTaskEdit(id, editedTask);
 
     setIsSubmitting(false);
+    savingRef.current = false;
     toast.success("Changes saved", {
       description: `"${editedTask.title}" has been updated.`,
     });
     onClose();
   };
 
-  // Gate: moving a task with an incomplete dependency to Done requires confirm
+  // Gate: moving a task with an incomplete dependency to Done requires confirm.
+  // The prerequisite's live status is read from the project's stored task data.
   const onFormSubmit: SubmitHandler<EditTaskFormValues> = (data) => {
     if (isSubmitting) return;
-    if (data.status === "Done" && hasDependency) {
+    const gate = evaluateDependencyGate({
+      dependency: dependencyRef,
+      tasks: dependencyTasks,
+      nextStatus: data.status,
+      selfId: task?.id,
+    });
+    if (gate) {
       setPendingData(data);
+      setPendingPrerequisite(gate.prerequisite);
       setShowDependencyModal(true);
       return;
     }
@@ -301,6 +331,8 @@ export default function EditTaskModal({
             </div>
 
             {/* Modal Body - 2 Column Layout */}
+            {/* eslint-disable-next-line react-hooks/refs -- the handler reads a ref
+                in-flight guard; safe as it only runs on submit (event handler). */}
             <form onSubmit={handleSubmit(onFormSubmit)}>
               <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 max-h-[80vh] overflow-y-auto">
                 {/* Left Main Content Column */}
@@ -582,21 +614,32 @@ export default function EditTaskModal({
                             transition={{ duration: 0.2 }}
                             className="inline-flex items-center gap-2 bg-amber-50/80 border border-amber-200/60 text-foreground rounded p-1.5 text-xs w-full justify-between overflow-hidden"
                           >
-                            <div className="flex items-center gap-1.5">
+                            <div className="flex items-center gap-1.5 min-w-0">
                               <Ban className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                              <span className="font-mono text-[11px] text-muted-foreground">
-                                {task?.blockedBy?.code ?? editTaskDefaults.blockedBy.code}
+                              <span className="font-mono text-[11px] text-muted-foreground shrink-0">
+                                {resolvedDependency?.id ?? dependencyRef}
                               </span>
                               <span className="text-xs font-medium text-foreground truncate max-w-27.5">
-                                {task?.blockedBy?.title ?? editTaskDefaults.blockedBy.title}
+                                {resolvedDependency?.title ?? "Dependency not found"}
                               </span>
+                              {resolvedDependency && (
+                                <Badge
+                                  variant="outline"
+                                  className="text-[9px] px-1.5 py-0 shrink-0"
+                                >
+                                  {resolvedDependency.status}
+                                </Badge>
+                              )}
                             </div>
                             <Button
                               type="button"
                               variant="ghost"
                               size="icon-xs"
                               className="text-muted-foreground hover:text-muted-foreground"
-                              onClick={() => setHasDependency(false)}
+                              onClick={() => {
+                                setDependencyRef(null);
+                                setDepInput("");
+                              }}
                             >
                               <X className="w-3.5 h-3.5" />
                             </Button>
@@ -604,15 +647,29 @@ export default function EditTaskModal({
                         )}
                       </AnimatePresence>
 
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="text-xs text-muted-foreground hover:text-foreground gap-1 pt-1"
-                      >
-                        <Link2 className="w-3.5 h-3.5" />
-                        <span>Add Dependency</span>
-                      </Button>
+                      {!hasDependency && (
+                        <div className="relative flex items-center">
+                          <Search className="w-4 h-4 text-muted-foreground absolute left-3 shrink-0 pointer-events-none" />
+                          <Input
+                            type="text"
+                            value={depInput}
+                            onChange={(e) => setDepInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && depInput.trim()) {
+                                e.preventDefault();
+                                setDependencyRef(depInput.trim());
+                              }
+                            }}
+                            onBlur={() => {
+                              if (depInput.trim()) {
+                                setDependencyRef(depInput.trim());
+                              }
+                            }}
+                            placeholder="Search tasks by ID or name (e.g., TASK-102)"
+                            className="pl-9 text-xs"
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -640,11 +697,14 @@ export default function EditTaskModal({
       )}
       </AnimatePresence>
 
-      {/* Dependency Warning – shown when saving a dependent task as Done */}
+      {/* Dependency Warning – shown when saving a dependent task as Done.
+          Prerequisite info is live, resolved from the project's stored tasks. */}
       <DependencyIncompleteModal
         isOpen={showDependencyModal}
         onClose={() => setShowDependencyModal(false)}
         onConfirm={confirmSave}
+        prerequisite={pendingPrerequisite}
+        targetStatus="Done"
       />
     </>
   );

@@ -10,7 +10,7 @@ import {
   Briefcase,
   type LucideIcon,
 } from "lucide-react";
-import type { MyTask } from "@/data/tasks";
+import { myTasks, type MyTask } from "@/data/tasks";
 import type { Project, DashboardProject } from "@/data/projects";
 
 /* ── localStorage keys (shared with the create modals) ── */
@@ -89,6 +89,42 @@ function readItems<T>(key: string): T[] {
   } catch {
     return [];
   }
+}
+
+/* ── Readable, collision-free task ids ─────────────────────────────────────
+   Seed tasks use ids like "TASK-95", so newly created tasks get the next
+   highest available number instead of a long UUID that looks odd on the
+   board. */
+export function nextTaskId(): string {
+  const used = new Set<number>();
+  const collect = (raw: string | null) =>
+    (parseItems<{ id: string }>(raw) ?? []).forEach((t) => {
+      const m = typeof t?.id === "string" ? /^TASK-(\d+)$/.exec(t.id) : null;
+      if (m) used.add(Number(m[1]));
+    });
+  myTasks.forEach((t) => {
+    const m = /^TASK-(\d+)$/.exec(t.id);
+    if (m) used.add(Number(m[1]));
+  });
+  collect(localStorage.getItem(LS_TASKS_KEY));
+
+  let n = 1;
+  while (used.has(n)) n += 1;
+  return `TASK-${n}`;
+}
+
+/** Readable, collision-free project ids (mirrors nextTaskId). */
+export function nextProjectId(): string {
+  const used = new Set<number>();
+  (parseItems<{ id: string }>(localStorage.getItem(LS_PROJECTS_KEY)) ?? []).forEach(
+    (p) => {
+      const m = typeof p?.id === "string" ? /^PRJ-(\d+)$/.exec(p.id) : null;
+      if (m) used.add(Number(m[1]));
+    },
+  );
+  let n = 1;
+  while (used.has(n)) n += 1;
+  return `PRJ-${n}`;
 }
 
 function readRecord<T>(key: string): Record<string, T> {
@@ -283,6 +319,8 @@ export function customTaskToMyTask(task: CustomTask): MyTask {
     dueDate: formatTaskDueDate(task.dueDate),
     tags: task.tags ?? [],
     section: resolveTaskSection(task.dueDate),
+    assignee: task.assignee || undefined,
+    dependency: task.dependency ?? null,
   };
 }
 

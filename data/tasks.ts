@@ -7,6 +7,10 @@ export interface MyTask {
   dueDate: string;
   tags: string[];
   section: "OVERDUE" | "TODAY";
+  /** Team member responsible for the task (optional so tasks can be unassigned). */
+  assignee?: string;
+  /** Free-form reference (task id or title) to a task this one depends on. */
+  dependency?: string | null;
 }
 
 export interface TaskActivityItem {
@@ -65,6 +69,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Oct 28",
     tags: ["Design"],
     section: "OVERDUE",
+    assignee: "Sarah Chen",
   },
   {
     id: "TASK-102",
@@ -75,6 +80,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Backend", "Security"],
     section: "TODAY",
+    assignee: "Elena Rostova",
   },
   {
     id: "TASK-115",
@@ -85,6 +91,8 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Frontend"],
     section: "TODAY",
+    assignee: "Alex Morgan",
+    dependency: "TASK-130",
   },
   {
     id: "TASK-118",
@@ -95,6 +103,8 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Design", "Mobile"],
     section: "TODAY",
+    assignee: "Sarah Chen",
+    dependency: "TASK-108",
   },
   {
     id: "TASK-121",
@@ -105,6 +115,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Backend", "Security"],
     section: "TODAY",
+    assignee: "Elena Rostova",
   },
   {
     id: "TASK-126",
@@ -115,6 +126,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Backend", "Testing"],
     section: "TODAY",
+    assignee: "Michael Chen",
   },
   {
     id: "TASK-98",
@@ -125,6 +137,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Aug 12",
     tags: ["Frontend", "Motion"],
     section: "OVERDUE",
+    assignee: "John Carter",
   },
   {
     id: "TASK-108",
@@ -135,6 +148,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Aug 20",
     tags: ["Mobile", "Offline"],
     section: "OVERDUE",
+    assignee: "Liam Vance",
   },
   {
     id: "TASK-110",
@@ -145,6 +159,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Aug 21",
     tags: ["Frontend", "Security"],
     section: "OVERDUE",
+    assignee: "John Carter",
   },
   {
     id: "TASK-130",
@@ -155,6 +170,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Frontend", "Reports"],
     section: "TODAY",
+    assignee: "Alex Morgan",
   },
   {
     id: "TASK-133",
@@ -165,6 +181,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Backend", "Payments"],
     section: "TODAY",
+    assignee: "Michael Chen",
   },
   {
     id: "TASK-136",
@@ -175,6 +192,7 @@ export const myTasks: MyTask[] = [
     dueDate: "Today",
     tags: ["Backend", "Email"],
     section: "TODAY",
+    assignee: "Liam Vance",
   },
 ];
 

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Roboto_Mono } from "next/font/google";
+import { Poppins, Roboto_Mono } from "next/font/google";
 import ThemeProvider from "@/components/customsUi/ThemeProvider";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -7,6 +7,12 @@ import "./globals.css";
 const robotoMono = Roboto_Mono({
   variable: "--font-roboto-mono",
   subsets: ["latin"],
+});
+
+const poppins = Poppins({
+  variable: "--font-poppins",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -20,7 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${robotoMono.variable} h-full antialiased`}
+      className={`${robotoMono.variable} ${poppins.variable} h-full antialiased`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col">

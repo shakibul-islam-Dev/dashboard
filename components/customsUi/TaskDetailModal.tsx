@@ -13,6 +13,7 @@ import {
   Send,
 } from "lucide-react";
 import { taskDetail } from "@/data/tasks";
+import { findDependencyTask, type DependencyLookupTask } from "@/lib/dependency";
 import { toast } from "sonner";
 
 // shadcn UI components
@@ -24,6 +25,9 @@ import { Input } from "@/components/ui/input";
 interface TaskDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** Called when the edit (pencil) icon is clicked. Pages can open their
+      EditTaskModal here; when omitted the icon is hidden. */
+  onEdit?: (task: TaskDetailModalProps["task"]) => void;
   task?: {
     id?: string;
     title?: string;
@@ -33,13 +37,18 @@ interface TaskDetailModalProps {
     dueDate?: string;
     priority?: string;
     tags?: string[];
+    dependency?: string | null;
   };
+  /** Stored task data used to resolve the dependency's live status. */
+  dependencyTasks?: DependencyLookupTask[];
 }
 
 export default function TaskDetailModal({
   isOpen,
   onClose,
+  onEdit,
   task,
+  dependencyTasks = [],
 }: TaskDetailModalProps) {
   const [comment, setComment] = useState("");
 
@@ -59,6 +68,18 @@ export default function TaskDetailModal({
         .slice(0, 2)
         .toUpperCase()
     : taskDetail.assignee.initials;
+
+  /* Resolve the dependency against stored task data (falls back to static
+     demo info when the task has no reference of its own). */
+  const dependency =
+    task?.dependency !== undefined
+      ? (findDependencyTask(task.dependency, dependencyTasks, task?.id) ??
+        (task.dependency
+          ? { id: task.dependency, title: "Dependency not found", status: "Unresolved" }
+          : null))
+      : taskDetail.dependency
+        ? { id: taskDetail.dependency.code, ...taskDetail.dependency }
+        : null;
 
   // Close modal on Escape key press
   useEffect(() => {
@@ -113,9 +134,21 @@ export default function TaskDetailModal({
 
           <div className="flex items-center gap-3 text-muted-foreground">
             {/* Replaced: raw <button> edit → <Button variant="ghost" size="icon"> */}
-            <Button variant="ghost" size="icon" className="p-1">
-              <Pencil className="w-4 h-4" />
-            </Button>
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="p-1"
+                aria-label="Edit task"
+                title="Edit task"
+                onClick={() => {
+                  onClose();
+                  onEdit(task);
+                }}
+              >
+                <Pencil className="w-4 h-4" />
+              </Button>
+            )}
             {/* Replaced: raw <button> more options → <Button variant="ghost" size="icon"> */}
             <Button variant="ghost" size="icon" className="p-1">
               <MoreHorizontal className="w-4 h-4" />
@@ -223,31 +256,33 @@ export default function TaskDetailModal({
             </div>
           </div>
 
-          {/* Dependency Section */}
-          <div>
-            <h2 className="text-sm font-semibold text-foreground mb-3">
-              Dependency
-            </h2>
-            <div className="bg-card border border-border rounded-xl p-3.5 shadow-2xs flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Link2 className="w-4 h-4" />
+          {/* Dependency Section — hidden when the task explicitly has none */}
+          {dependency && (
+            <div>
+              <h2 className="text-sm font-semibold text-foreground mb-3">
+                Dependency
+              </h2>
+              <div className="bg-card border border-border rounded-xl p-3.5 shadow-2xs flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                    <Link2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <span className="block text-[11px] font-mono font-semibold text-muted-foreground">
+                      {dependency.id}
+                    </span>
+                    <p className="text-sm font-medium text-foreground">
+                      {dependency.title}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <span className="block text-[11px] font-mono font-semibold text-muted-foreground">
-                    {taskDetail.dependency.code}
-                  </span>
-                  <p className="text-sm font-medium text-foreground">
-                    {taskDetail.dependency.title}
-                  </p>
-                </div>
+                {/* Replaced: raw dependency status <span> → <Badge variant="outline"> */}
+                <Badge variant="outline" className="text-[10px] font-bold font-mono tracking-wider uppercase bg-primary/10 text-primary border-primary/20">
+                  {dependency.status}
+                </Badge>
               </div>
-              {/* Replaced: raw dependency status <span> → <Badge variant="outline"> */}
-              <Badge variant="outline" className="text-[10px] font-bold font-mono tracking-wider uppercase bg-primary/10 text-primary border-primary/20">
-                {taskDetail.dependency.status}
-              </Badge>
             </div>
-          </div>
+          )}
 
           {/* Activity Feed */}
           <div className="pt-2">

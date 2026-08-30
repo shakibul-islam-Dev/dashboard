@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -10,6 +10,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Columns3,
   Download,
   FilePlus2,
   FileText,
@@ -42,7 +43,6 @@ import {
 import {
   createTaskDefaults,
   projectStatusOptions,
-  myTasks as seedMyTasks,
 } from "@/data/tasks";
 import {
   useCustomProjects,
@@ -57,10 +57,21 @@ import {
   LS_DELETED_TASKS_KEY,
   type ProjectEditOverride,
 } from "@/lib/customStore";
+import {
+  useProjectTasks,
+  type ProjectTask,
+} from "@/lib/useProjectTasks";
+import {
+  evaluateDependencyGate,
+  type DependencyRef,
+} from "@/lib/dependency";
 import PageContainer from "@/components/customsUi/PageContainer";
 import PageNav from "@/components/customsUi/PageNav";
 import CreateTaskModal from "@/components/customsUi/CreateTaskModal";
 import TaskDetailModal from "@/components/customsUi/TaskDetailModal";
+import EditTaskModal from "@/components/customsUi/EditTaskModal";
+import KanbanBoard from "@/components/customsUi/KanbanBoard";
+import DependencyIncompleteModal from "@/components/customsUi/DependencyIncompleteModal";
 
 /* shadcn UI components */
 import { Button } from "@/components/ui/button";
@@ -78,14 +89,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-type DetailTask = {
-  id: string;
-  title: string;
-  status: string;
-  assignee?: string;
-  dueDate?: string;
-  custom: boolean;
-};
+type DetailTask = ProjectTask;
 
 type DetailMember = {
   name: string;
@@ -109,19 +113,15 @@ const FILE_TYPE_META: Record<
   TXT: { icon: FileText, color: "bg-slate-100 text-slate-600" },
 };
 
-/* Legacy mock uses "Completed"/"In Progress"; map to the app's task statuses. */
-const LEGACY_STATUS_MAP: Record<string, string> = {
-  Completed: "Done",
-  "In Progress": "In Progress",
-};
-const toDetailStatus = (status: string) => LEGACY_STATUS_MAP[status] ?? "Todo";
+/* Legacy mock statuses ("Completed") are mapped to board statuses by
+   useProjectTasks (Todo / In Progress / Review / Done). */
 
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const projectId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
   const { projects: customProjects, updateProject } = useCustomProjects();
-  const { tasks: customTasks, updateTask, removeTask } = useCustomTasks();
+  const { removeTask } = useCustomTasks();
   const archivedSet = useIdSet(LS_ARCHIVED_PROJECTS_KEY);
   const deletedSet = useIdSet(LS_DELETED_PROJECTS_KEY);
   const deletedTasks = useIdSet(LS_DELETED_TASKS_KEY);
@@ -130,9 +130,46 @@ export default function ProjectDetailPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [detailTask, setDetailTask] = useState<DetailTask | null>(null);
 
-  /* ── Local patches for seeded / synthesized tasks (custom tasks update the store) ── */
-  const [seedStatusPatches, setSeedStatusPatches] = useState<Record<string, string>>({});
-  const [removedGenericTasks, setRemovedGenericTasks] = useState<Set<string>>(new Set());
+  /* ── Edit Task modal target (opened from the Task Detail pencil icon) ── */
+  const [editTarget, setEditTarget] = useState<
+    {
+      id: string;
+      title: string;
+      status: string;
+      priority: string;
+      assignee?: string;
+      dueDate: string;
+      tags: string[];
+      dependency?: string | null;
+    } | null
+  >(null);
+  const handleEditTask = (task?: {
+    id?: string;
+    title?: string;
+    status?: string;
+    priority?: string;
+    assignee?: string;
+    dueDate?: string;
+    tags?: string[];
+    dependency?: string | null;
+  } | null) => {
+    if (!task?.id) return;
+    setEditTarget({
+      id: task.id,
+      title: task.title ?? "Untitled task",
+      status: task.status ?? "Todo",
+      priority: task.priority ?? "Medium",
+      assignee: task.assignee,
+      dueDate: task.dueDate ?? "",
+      tags: task.tags ?? [],
+      dependency: task.dependency ?? null,
+    });
+    setShowEditModal(true);
+  };
+  const [showEditModal, setShowEditModal] = useState(false);
+
+  /* ── Tasks tab view mode: list or Kanban board ── */
+  const [taskView, setTaskView] = useState<"list" | "board">("list");
 
   /* ── Flatten board projects into the Project shape so /p1..p5 resolve too ── */
   const boardProjectsAsProjects = useMemo<Project[]>(
@@ -220,62 +257,17 @@ export default function ProjectDetailPage() {
     archivedSet,
   ]);
 
-  /* ── Fallback/synthesized task list (used when a project has no seeded/custom tasks) ── */
-  const legacyTasks = useMemo<DetailTask[]>(
-    () =>
-      project
-        ? getProjectDetails(project.id).tasks.map((t) => ({
-            id: `${project.id}-t${t.id}`,
-            title: t.title,
-            status: toDetailStatus(t.status),
-            assignee: t.assignee,
-            dueDate: undefined,
-            custom: false,
-          }))
-        : [],
-    [project],
+  /* ── Unified task list: seeded + custom + legacy fallback, edits applied ──
+     (statuses persist via the task store / edit overrides) */
+  const { tasks: hookTasks, setTaskStatus } = useProjectTasks(
+    project?.id,
+    project?.title,
   );
 
-  /* ── All tasks for this project: seeded + custom (+ synthesized fallback) ── */
-  const projectTasks = useMemo<DetailTask[]>(() => {
-    if (!project) return [];
-
-    const seed: DetailTask[] = seedMyTasks
-      .filter((t) => t.project === project.title)
-      .map((t) => ({
-        id: t.id,
-        title: t.title,
-        status: seedStatusPatches[t.id] ?? t.status,
-        assignee: undefined,
-        dueDate: t.dueDate,
-        custom: false,
-      }));
-
-    const custom: DetailTask[] = customTasks
-      .filter((t) => t.project === project.title)
-      .map((t) => ({
-        id: t.id,
-        title: t.title,
-        status: t.status,
-        assignee: t.assignee,
-        dueDate: t.dueDate,
-        custom: true,
-      }));
-
-    const base =
-      seed.length > 0 || custom.length > 0 ? [...seed, ...custom] : legacyTasks;
-
-    return base.filter(
-      (t) => !deletedTasks.has(t.id) && !removedGenericTasks.has(t.id),
-    );
-  }, [
-    project,
-    customTasks,
-    seedStatusPatches,
-    legacyTasks,
-    deletedTasks,
-    removedGenericTasks,
-  ]);
+  const projectTasks = useMemo<DetailTask[]>(
+    () => hookTasks.filter((t) => !deletedTasks.has(t.id)),
+    [hookTasks, deletedTasks],
+  );
 
   const completedCount = projectTasks.filter((t) => t.status === "Done").length;
   const totalCount = projectTasks.length;
@@ -428,32 +420,60 @@ export default function ProjectDetailPage() {
     return items;
   }, [project, projectTasks, milestones, files]);
 
-  /* ── Task actions (custom tasks update the store; seeded ones use local patches) ── */
-  const setTaskStatus = (id: string, status: string, custom: boolean) => {
-    if (custom) {
-      updateTask(id, { status });
-    } else {
-      setSeedStatusPatches((prev) =>
-        prev[id] === status ? prev : { ...prev, [id]: status },
-      );
-    }
+  /* ── Task actions (custom tasks update the store; seeded ones get persisted overrides) ── */
+
+  /* Any move to Done passes the dependency gate first: the prerequisite's
+     live status is resolved from this project's stored task data. */
+  const [pendingMove, setPendingMove] = useState<{
+    id: string;
+    status: string;
+    prerequisite: DependencyRef;
+  } | null>(null);
+
+  const requestStatusChange = useCallback(
+    (id: string, status: string) => {
+      const task = projectTasks.find((t) => t.id === id);
+      if (!task || task.status === status) return;
+
+      const gate = evaluateDependencyGate({
+        dependency: task.dependency,
+        tasks: projectTasks,
+        nextStatus: status,
+        selfId: task.id,
+      });
+      if (gate) {
+        setPendingMove({ id, status, prerequisite: gate.prerequisite });
+        return;
+      }
+
+      setTaskStatus(id, status);
+      toast.success("Status updated", {
+        description: `"${task.title}" moved to ${status}.`,
+      });
+    },
+    [projectTasks, setTaskStatus],
+  );
+
+  const confirmPendingMove = () => {
+    if (!pendingMove) return;
+    const task = projectTasks.find((t) => t.id === pendingMove.id);
+    setTaskStatus(pendingMove.id, pendingMove.status);
+    setPendingMove(null);
+    toast.success("Status updated", {
+      description: `"${task?.title ?? "Task"}" moved to ${pendingMove.status}.`,
+    });
   };
 
   const toggleTaskDone = (task: DetailTask) => {
     const next = task.status === "Done" ? "In Progress" : "Done";
-    setTaskStatus(task.id, next, task.custom);
-    toast.success(next === "Done" ? "Task completed" : "Task reopened", {
-      description: `"${task.title}" marked as ${next}.`,
-    });
+    requestStatusChange(task.id, next);
   };
 
   const deleteTask = (task: DetailTask) => {
     if (task.custom) {
       removeTask(task.id);
-    } else if (seedMyTasks.some((t) => t.id === task.id)) {
-      updateIdSet(LS_DELETED_TASKS_KEY, task.id, true);
     } else {
-      setRemovedGenericTasks((prev) => new Set(prev).add(task.id));
+      updateIdSet(LS_DELETED_TASKS_KEY, task.id, true);
     }
     toast.success("Task deleted", {
       description: `"${task.title}" removed from this project.`,
@@ -660,9 +680,40 @@ export default function ProjectDetailPage() {
                     : `${stats.completed} of ${stats.total} done`}
                 </span>
               </CardTitle>
-              <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreateModal(true)}>
-                <Plus className="w-3.5 h-3.5" /> Add Task
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* View toggle: List ↔ Kanban board */}
+                <div
+                  className="flex items-center rounded-lg border border-border p-0.5"
+                  role="group"
+                  aria-label="Task view mode"
+                >
+                  <Button
+                    variant={taskView === "list" ? "secondary" : "ghost"}
+                    size="icon-xs"
+                    title="List view"
+                    aria-label="List view"
+                    aria-pressed={taskView === "list"}
+                    className="cursor-pointer"
+                    onClick={() => setTaskView("list")}
+                  >
+                    <ListTodo className="w-3.5 h-3.5" />
+                  </Button>
+                  <Button
+                    variant={taskView === "board" ? "secondary" : "ghost"}
+                    size="icon-xs"
+                    title="Board view"
+                    aria-label="Board view"
+                    aria-pressed={taskView === "board"}
+                    className="cursor-pointer"
+                    onClick={() => setTaskView("board")}
+                  >
+                    <Columns3 className="w-3.5 h-3.5" />
+                  </Button>
+                </div>
+                <Button variant="outline" size="sm" className="gap-1.5" onClick={() => setShowCreateModal(true)}>
+                  <Plus className="w-3.5 h-3.5" /> Add Task
+                </Button>
+              </div>
             </CardHeader>
 
             {totalCount > 0 && (
@@ -671,6 +722,20 @@ export default function ProjectDetailPage() {
               </CardContent>
             )}
 
+            {taskView === "board" ? (
+              /* ── Kanban Board view: Todo / In Progress / Review / Done ── */
+              <CardContent className="pt-4">
+                <KanbanBoard
+                  tasks={projectTasks}
+                  onStatusChange={requestStatusChange}
+                  onOpenTask={(task) =>
+                    setDetailTask(
+                      projectTasks.find((t) => t.id === task.id) ?? null,
+                    )
+                  }
+                />
+              </CardContent>
+            ) : (
             <CardContent className="p-0">
               {projectTasks.length === 0 ? (
                 <div className="py-14 text-center text-muted-foreground">
@@ -729,7 +794,7 @@ export default function ProjectDetailPage() {
                             <Select
                               value={task.status}
                               onValueChange={(v) =>
-                                v && setTaskStatus(task.id, v, task.custom)
+                                v && requestStatusChange(task.id, v)
                               }
                             >
                               <SelectTrigger className="h-7 text-xs shadow-none gap-1 px-2.5">
@@ -760,6 +825,7 @@ export default function ProjectDetailPage() {
                 </div>
               )}
             </CardContent>
+            )}
           </Card>
         </TabsContent>
 
@@ -1042,11 +1108,36 @@ export default function ProjectDetailPage() {
         defaultProject={project.title}
       />
 
-      {/* Task Detail Modal (opens from a task row) */}
+      {/* Task Detail Modal (opens from a task row or a board card) */}
       <TaskDetailModal
         isOpen={!!detailTask}
         onClose={() => setDetailTask(null)}
-        task={detailTask ?? undefined}
+        onEdit={handleEditTask}
+        task={
+          detailTask
+            ? { ...detailTask, project: project.title }
+            : undefined
+        }
+        dependencyTasks={projectTasks}
+      />
+
+      {/* Edit Task Modal (opened via the detail pencil icon) */}
+      <EditTaskModal
+        key={editTarget?.id ?? "edit"}
+        isOpen={showEditModal && !!editTarget}
+        onClose={() => setShowEditModal(false)}
+        task={editTarget}
+        dependencyTasks={projectTasks}
+      />
+
+      {/* Dependency Warning – fires when moving a blocked task to Done
+          (board drag & drop, keyboard moves or the list status select) */}
+      <DependencyIncompleteModal
+        isOpen={!!pendingMove}
+        onClose={() => setPendingMove(null)}
+        onConfirm={confirmPendingMove}
+        prerequisite={pendingMove?.prerequisite ?? null}
+        targetStatus={pendingMove?.status ?? "Done"}
       />
     </PageContainer>
   );

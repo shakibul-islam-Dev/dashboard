@@ -13,6 +13,7 @@ export type FilterableTask = SortableTask & {
   status: string;
   priority: string;
   tags: string[];
+  assignee?: string;
 };
 
 export type TaskSection = "ALL" | "OVERDUE" | "TODAY" | "ARCHIVED";
@@ -25,18 +26,22 @@ export interface TaskFilterOptions {
   status?: string;
   priority?: string;
   project?: string;
+  assignee?: string;
   tag?: string;
   due?: DueFilter;
   direction?: "asc" | "desc";
 }
 
-/* Loose search: match title, project or id against the query. */
+/* Loose search: match title, project, assignee or id against the query. */
 export function matchesSearch<T extends SortableTask>(task: T, query: string) {
   const q = query.toLowerCase();
   return (
     task.title.toLowerCase().includes(q) ||
     task.project.toLowerCase().includes(q) ||
-    task.id.toLowerCase().includes(q)
+    task.id.toLowerCase().includes(q) ||
+    ("assignee" in task &&
+      typeof task.assignee === "string" &&
+      task.assignee.toLowerCase().includes(q))
   );
 }
 
@@ -112,6 +117,7 @@ export function filterAndSortTasks<T extends FilterableTask>(
     status = "All",
     priority = "All",
     project = "All",
+    assignee = "All",
     tag = "All",
     due = "All",
     direction = "asc",
@@ -135,6 +141,11 @@ export function filterAndSortTasks<T extends FilterableTask>(
   }
   if (project !== "All") {
     result = result.filter((t) => t.project === project);
+  }
+  if (assignee === "Unassigned") {
+    result = result.filter((t) => !t.assignee);
+  } else if (assignee !== "All") {
+    result = result.filter((t) => t.assignee === assignee);
   }
   if (tag !== "All") {
     result = result.filter((t) => t.tags.includes(tag));

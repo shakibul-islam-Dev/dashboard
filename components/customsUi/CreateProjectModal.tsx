@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { X, Calendar, Plus, Loader2 } from "lucide-react";
 import { projectStatusOptions } from "@/data/tasks";
 import { defaultProjectMembers, type MemberAvatar } from "@/data/team";
 import {
   useCustomProjects,
   writeProjectEdit,
+  nextProjectId,
   type CustomProject,
 } from "@/lib/customStore";
 import { toast } from "sonner";
@@ -166,7 +167,11 @@ export default function CreateProjectModal({
   };
 
   // ── Form Submission: validates, persists to localStorage, shows toast ────────
+  // In-flight ref lock prevents a rapid double-submit from firing 2 toasts.
+  const savingRef = useRef(false);
   const onSubmit: SubmitHandler<ProjectFormValues> = async (data) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setIsSubmitting(true);
 
     // Simulate a brief save delay
@@ -192,6 +197,7 @@ export default function CreateProjectModal({
       }
 
       setIsSubmitting(false);
+      savingRef.current = false;
       toast.success("Project updated", {
         description: `"${data.projectName.trim()}" has been updated.`,
       });
@@ -200,7 +206,7 @@ export default function CreateProjectModal({
     }
 
     const newProject: CustomProject = {
-      id: `PRJ-${crypto.randomUUID()}`,
+      id: nextProjectId(),
       name: data.projectName.trim(),
       description: data.description,
       status: data.status,
@@ -214,6 +220,7 @@ export default function CreateProjectModal({
     addProject(newProject);
 
     setIsSubmitting(false);
+    savingRef.current = false;
     toast.success("Project created", {
       description: `"${newProject.name}" has been added to your projects.`,
     });
@@ -255,6 +262,8 @@ export default function CreateProjectModal({
             </div>
 
             {/* Body Content */}
+            {/* eslint-disable-next-line react-hooks/refs -- the handler reads a ref
+                in-flight guard; safe as it only runs on submit (event handler). */}
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="px-6 py-2 space-y-5">
                 {/* ── Project Name ──────────────────────────────────────────── */}

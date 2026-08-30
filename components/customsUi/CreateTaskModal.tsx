@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   X,
   Bold,
@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { createTaskDefaults } from "@/data/tasks";
 import { projectsPageData } from "@/data/projects";
-import { useCustomTasks, useCustomProjects, type CustomTask } from "@/lib/customStore";
+import { useCustomTasks, useCustomProjects, nextTaskId, type CustomTask } from "@/lib/customStore";
 import { toast } from "sonner";
 import { useForm, Controller, type SubmitHandler } from "react-hook-form";
 import { AnimatePresence, motion } from "motion/react";
@@ -151,14 +151,18 @@ export default function CreateTaskModal({
   };
 
   // ── Form Submission: validates, persists to localStorage, shows toast ───────
+  // In-flight ref lock prevents a rapid double-submit from firing 2 toasts.
+  const savingRef = useRef(false);
   const onSubmit: SubmitHandler<TaskFormValues> = async (data) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     setIsSubmitting(true);
 
     // Simulate a brief network delay for realistic UX
     await new Promise((resolve) => setTimeout(resolve, 600));
 
     const newTask: CustomTask = {
-      id: `TASK-${crypto.randomUUID()}`,
+      id: nextTaskId(),
       title: data.taskTitle.trim(),
       description: data.description,
       project: data.project,
@@ -175,6 +179,7 @@ export default function CreateTaskModal({
     addTask(newTask);
 
     setIsSubmitting(false);
+    savingRef.current = false;
     toast.success("Task created", {
       description: `"${newTask.title}" has been added to your tasks.`,
     });
@@ -207,6 +212,8 @@ export default function CreateTaskModal({
             </div>
 
             {/* Modal Form Body */}
+            {/* eslint-disable-next-line react-hooks/refs -- the handler reads a ref
+                in-flight guard; safe as it only runs on submit (event handler). */}
             <form onSubmit={handleSubmit(onSubmit)}>
               <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
                 {/* Task Title */}

@@ -2,6 +2,7 @@
 
 import DashboardNavigation from "@/components/dashboard/DashboardNavigation";
 import DashboardSideBar from "@/components/dashboard/DashboardSideBar";
+import PageTitle from "@/components/customsUi/PageTitle";
 import { useSession } from "@/lib/auth";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -23,6 +24,7 @@ export default function DashboardLayout({
 
   return (
     <div className="flex h-screen w-full bg-muted overflow-hidden">
+      <PageTitle />
       <DashboardSideBar
         mobileOpen={isMobileSidebarOpen}
         onMobileClose={() => setIsMobileSidebarOpen(false)}
